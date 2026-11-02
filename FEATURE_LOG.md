@@ -44,6 +44,11 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-02 | Vacated opportunity v7 (teammates Out/Doubtful → share × (1 + λ·V)) | **Big-60 vs v5** | 6.481 | 6.486 | **+0.005** | [−0.005, +0.015] | ❌ **Rejected** (pre-registered headline) |
 | 2026-11-02 | v7, Big-60 games with an absent teammate (descriptive) | vs v5 | 6.517 | 6.530 | +0.013 | [−0.011, +0.035] | ❌ No gain even where it applies |
 | 2026-11-02 | v7 placebo (absences moved to random teams) | Big-60 vs v5 | 6.481 | 6.472 | −0.009 | [−0.017, −0.002] | ⚠️ Placebo "helped": acts as downward recalibration (see DECISIONS) |
+| 2026-11-02 | **Median calibration v8** (a + b·proj per position, least absolute deviations) | **Big-60 vs v5** | 6.484 | 6.429 | **−0.054** | [−0.097, −0.012] | ✅ **Adopted** (p = 0.006) |
+| 2026-11-02 | Mechanism: v8 (median) vs v8-ols (mean recalibration) | Big-60 | 6.458 | 6.429 | −0.029 | [−0.066, +0.007] | ⚠️ p = 0.064: "median targeting" claim not established |
+| 2026-11-02 | Least-squares recalibration (v8-ols control) | Big-60 vs v5 | 6.484 | 6.458 | −0.026 | [−0.044, −0.007] | ➖ Control; plain recalibration helps too |
+| 2026-11-02 | v8 | All players vs v5 | 4.279 | 4.308 | +0.029 | [+0.012, +0.046] | ⚠️ Worse on fringe players (map extrapolated outside the range it was fitted on) |
+| 2026-11-02 | v8 (current) vs baseline | Big-60 | 6.678 | 6.429 | −0.249 | [−0.324, −0.174] | ✅ Current model (dev OOS) |
 
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 

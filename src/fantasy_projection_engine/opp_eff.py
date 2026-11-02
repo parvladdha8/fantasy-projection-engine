@@ -9,7 +9,13 @@ Projected points = Σ over components [ expected volume × expected points-per-o
   pass       pass attempts            (yds/25 + 4·TD − 2·INT + 2·2pt) / attempt
   other      —                        fumbles lost (−2), return TDs (+6): plain EWMA
 
-Volume: exponentially weighted average of past games (half-life `hl_vol` games).
+Volume: short-memory average of past games (half-life `hl_vol`), shrunk toward the
+player's own long-run average (half-life `hl_long`) with prior strength `m` games:
+
+    vol = (S_vol + m · long_run) / (W + m)
+
+  S_vol, W = decayed sums of opportunities and of games (half-life hl_vol)
+  m = 0 reproduces v1 (no volume shrinkage).
 
 Efficiency: empirical-Bayes shrinkage toward the position's league-wide rate:
 
@@ -41,6 +47,8 @@ class CompParams:
     hl_vol: float  # half-life (games) for volume
     hl_eff: float  # half-life (games) for efficiency sums
     k: float       # shrinkage prior strength (pseudo-opportunities)
+    hl_long: float = 64  # half-life (games) of the long-run volume target
+    m: float = 0         # volume shrinkage strength (pseudo-games); 0 = v1
 
 
 DEFAULT_PARAMS = {
@@ -112,7 +120,12 @@ def project(games: pd.DataFrame, params: dict = DEFAULT_PARAMS, sums_cache: dict
     for c, opp in COMPONENTS.items():
         p = params[c]
         w = dsum(ones, p.hl_vol)
-        vol = np.where(w > 0, dsum(opp, p.hl_vol) / np.where(w > 0, w, 1), np.nan)
+        s_vol = dsum(opp, p.hl_vol)
+        if p.m > 0:
+            w_long = dsum(ones, p.hl_long)
+            long_run = dsum(opp, p.hl_long) / np.where(w_long > 0, w_long, 1)
+            s_vol, w = s_vol + p.m * long_run, w + p.m * (w_long > 0)
+        vol = np.where(w > 0, s_vol / np.where(w > 0, w, 1), np.nan)
         s_opp, s_pts = dsum(opp, p.hl_eff), dsum(f"pts_{c}", p.hl_eff)
         if ("mu", c) not in cache:
             cache[("mu", c)] = league_rate(d, f"pts_{c}", opp).to_numpy()

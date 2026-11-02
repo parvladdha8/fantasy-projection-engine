@@ -24,7 +24,7 @@ def main():
     for c in COMPONENTS:
         p = params[c]
         lines += [f"## {c}: hl_vol={p.hl_vol}, hl_eff={p.hl_eff}, k={p.k} (MSE {grid[c][0][0]:.4f})", ""]
-        ks = {r[3]: r[0] for r in grid[c] if (r[1], r[2]) == (p.hl_vol, p.hl_eff)}
+        ks = {r[3]: r[0] for r in grid[c] if (r[1], r[2], r[4], r[5]) == (p.hl_vol, p.hl_eff, p.hl_long, p.m)}
         lines += ["MSE vs k at best half-lives: " + ", ".join(f"k={k}: {ks[k]:.4f}" for k in K), ""]
     lines += [f"## other: hl={params['other_hl']}"]
     out = {c: asdict(params[c]) for c in COMPONENTS} | {"other_hl": params["other_hl"]}

@@ -66,3 +66,16 @@ def test_shrinkage_extremes():
     m = big["eff_rec"].notna() & mu.notna()
     np.testing.assert_allclose(big.loc[m, "eff_rec"], mu[m], rtol=1e-6)
     assert (big.loc[m, "shrink_rec"] > 0.999).all()
+
+
+def test_volume_shrinkage_m0_is_v1_and_large_m_is_long_run():
+    d = _toy()
+    v1 = project(d, {**DEFAULT_PARAMS, "rec": CompParams(3, 8, 25)})
+    v2_m0 = project(d, {**DEFAULT_PARAMS, "rec": CompParams(3, 8, 25, hl_long=32, m=0)})
+    pd.testing.assert_series_equal(v1["vol_rec"], v2_m0["vol_rec"])
+    huge = project(d, {**DEFAULT_PARAMS, "rec": CompParams(3, 8, 25, hl_long=32, m=1e9)})
+    g = d["player_id"].to_numpy()
+    w = decayed_prior_sum(np.ones(len(d)), g, 32)
+    long_run = decayed_prior_sum(d["targets"].to_numpy(float), g, 32) / np.where(w > 0, w, 1)
+    m = w > 0
+    np.testing.assert_allclose(huge.loc[m, "vol_rec"], long_run[m], rtol=1e-6)

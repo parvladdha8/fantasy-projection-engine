@@ -19,10 +19,19 @@ import pandas as pd
 
 from . import SKILL_POSITIONS
 
+# Box-score columns carried through (0 for snap-only games)
+STAT_COLS = [
+    "attempts", "passing_yards", "passing_tds", "passing_interceptions", "passing_2pt_conversions",
+    "carries", "rushing_yards", "rushing_tds", "rushing_2pt_conversions",
+    "targets", "receptions", "receiving_yards", "receiving_tds", "receiving_2pt_conversions",
+    "rushing_fumbles_lost", "receiving_fumbles_lost", "sack_fumbles_lost", "special_teams_tds",
+]
+
 
 def build_player_games(ps: pd.DataFrame, snaps: pd.DataFrame, players: pd.DataFrame) -> pd.DataFrame:
     stats = ps[(ps["season_type"] == "REG") & (ps["position"].isin(SKILL_POSITIONS))]
-    stats = stats[["player_id", "player_display_name", "position", "team", "season", "week", "game_id", "fantasy_points_ppr"]]
+    stats = stats[["player_id", "player_display_name", "position", "team", "season", "week", "game_id", "fantasy_points_ppr", *STAT_COLS]]
+    stats = stats.fillna({c: 0 for c in STAT_COLS})
 
     xwalk = players[["gsis_id", "pfr_id", "display_name", "position"]].dropna(subset=["gsis_id", "pfr_id"])
     sn = snaps[snaps["game_type"] == "REG"].merge(xwalk, left_on="pfr_player_id", right_on="pfr_id", how="inner")
@@ -41,7 +50,7 @@ def build_player_games(ps: pd.DataFrame, snaps: pd.DataFrame, players: pd.DataFr
     stats_pos = stats.groupby("player_id")["position"].agg(lambda s: s.mode().iat[0])
     extra["position"] = extra["player_id"].map(stats_pos).fillna(extra["players_position"])
     extra = extra[extra["position"].isin(SKILL_POSITIONS)]
-    extra = extra.rename(columns={"display_name": "player_display_name"}).assign(fantasy_points_ppr=0.0, source="snaps_only")
+    extra = extra.rename(columns={"display_name": "player_display_name"}).assign(fantasy_points_ppr=0.0, source="snaps_only", **{c: 0.0 for c in STAT_COLS})
     # snap team labels can differ (e.g. OAK/LV); take team from the game for consistency
     extra["team"] = extra["team"].replace({"OAK": "LV"})
 

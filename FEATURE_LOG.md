@@ -6,6 +6,10 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 |---|---|---|---|---|---|---|---|
 | 2026-11-01 | Snap-count zero games in history | Big-60 (union) | 6.762 | 6.743 | −0.019 | [−0.030, −0.009] | ✅ Kept |
 | 2026-11-01 | Snap-count zero games in history | All players | 4.569 | 4.426 | −0.143 | [−0.151, −0.136] | ✅ Kept |
+| 2026-11-01 | Opportunity × efficiency v1 (player volume EWMA × shrunk efficiency), forward-chained OOS 2020–23 | Big-60 (union) | 6.677 | 6.674 | −0.003 | [−0.042, +0.037] | ⚠️ Not significant on Big-60 |
+| 2026-11-01 | Opportunity × efficiency v1, forward-chained OOS 2020–23 | All players | 4.348 | 4.313 | −0.035 | [−0.051, −0.018] | ✅ Significant on all players |
+
+**Note:** The first opportunity × efficiency run was *in-sample* (tuned and scored on 2019–2023): Big-60 −0.014, all −0.044. Those numbers are superseded by the forward-chained out-of-sample results above. The gap shows how much in-sample tuning flatters a model.
 
 ## Baseline weighting choices (dev seasons, Big-60 pool, complete data)
 

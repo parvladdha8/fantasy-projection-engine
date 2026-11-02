@@ -6,7 +6,7 @@ import pytest
 
 from fantasy_projection_engine.baseline import add_projection, prepare_games
 from fantasy_projection_engine.metrics import paired_bootstrap
-from fantasy_projection_engine.player_games import build_player_games
+from fantasy_projection_engine.player_games import STAT_COLS, build_player_games
 
 
 def _toy_sources():
@@ -14,6 +14,7 @@ def _toy_sources():
         "player_id": ["G1", "G1"], "player_display_name": ["Al"] * 2, "position": ["TE"] * 2,
         "team": ["KC"] * 2, "season": [2019] * 2, "week": [1, 3], "season_type": ["REG"] * 2,
         "game_id": ["2019_01_KC_X", "2019_03_KC_Y"], "fantasy_points_ppr": [10.0, 20.0],
+        **{c: [0.0, 0.0] for c in STAT_COLS},
     })
     snaps = pd.DataFrame({
         "game_id": ["2019_01_KC_X", "2019_02_KC_Z", "2019_03_KC_Y", "2019_04_KC_W"],

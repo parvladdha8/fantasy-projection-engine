@@ -14,7 +14,9 @@ Weekly full-PPR fantasy football projections that try to beat a simple average b
 | `  quality.py` | Data-quality checks (duplicates, missing weeks, scoring matches, …). |
 | `  player_games.py` | Adds games where a player was on the field but recorded no stats (0 points), using snap counts. |
 | `  baseline.py` | The naive baseline: weighted average of a player's past games. |
-| `  metrics.py` | Error measures (MAE, RMSE). |
+| `  opp_eff.py` | Opportunity × efficiency model: volume × points-per-touch, with shrinkage. |
+| `  tuning.py` | Picks model settings using only the seasons it's given. |
+| `  metrics.py` | Error measures (MAE, RMSE) and the paired significance test. |
 | `scripts/run_phase1.py` | Runs everything above and writes a report. |
 | `scripts/exp_*.py` | Experiments testing whether a feature earns its place. |
 | `FEATURE_LOG.md` | Every feature tried, with its error change, kept or rejected. |
@@ -33,4 +35,5 @@ uv run pytest                                   # run the tests
 ## Current status
 Phase 1 (Foundation) complete. Phase 2 in progress.
 - Step 1 done: snap-count zero games (a significant improvement; see `FEATURE_LOG.md`).
+- Step 2 in progress: opportunity × efficiency model (`opp_eff.py`). It beats the baseline overall but not yet on the Big-60.
 - Baseline MAE on development seasons 2019–2023, Big-60-style pool, complete data: **6.76 points per player**. That's the number to beat.

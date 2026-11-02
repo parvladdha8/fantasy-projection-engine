@@ -38,6 +38,9 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-02 | v5 vs v4 | Big-60 | 6.550 | 6.477 | −0.072 | [−0.095, −0.051] | ✅ Adoption rule met |
 | 2026-11-02 | v5 (current) vs baseline | Big-60 | 6.666 | 6.477 | −0.188 | [−0.242, −0.138] | ✅ **Current model** |
 | 2026-11-02 | **2024 VALIDATION** (one-time, frozen v5) vs baseline | Big-60 | 6.506 | 6.349 | **−0.158** | [−0.265, −0.049] | ✅ **Passed (p = 0.002)** |
+| 2026-11-02 | Week-of-season effect v6 (γ per position × wk 1–4/5–12/13–18, EB-shrunk) | **Big-60 vs v6-pos** | 6.473 | 6.480 | **+0.007** | [−0.000, +0.016] | ❌ **Rejected** (pre-registered headline) |
+| 2026-11-02 | Week-of-season v6 | Big-60 weeks 13–18 vs v5 (descriptive) | 6.543 | 6.564 | +0.021 | [−0.003, +0.046] | ❌ Worse late even though it fixed late bias |
+| 2026-11-02 | Position-only recalibration (v6-pos control) | Big-60 vs v5 | 6.484 | 6.473 | −0.011 | [−0.025, +0.005] | ❌ Not significant (p = 0.086); not adopted |
 
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 

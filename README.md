@@ -40,5 +40,7 @@ Phase 1 (Foundation) complete. Phase 2 in progress.
 - Step 1 done: snap-count zero games (a significant improvement; see `FEATURE_LOG.md`).
 - Step 2: opportunity × efficiency model (`opp_eff.py`) with shrinkage on both volume and efficiency, tuned on fantasy-relevant players. **It beats the baseline on the Big-60 by about 0.06 pts MAE (p ≈ 0.003), out-of-sample 2020–2023.** Paper table: `paper/results_shrinkage_ablation.md`.
 - Step 3: team context (share × team volume) on its own: no Big-60 gain.
-- Step 4: **betting lines** feed team volume. **Current model (v4) beats the baseline on the Big-60 by 0.119 pts MAE (p < 0.001), out-of-sample 2020–2023.** The lines' own contribution is −0.045 (p < 0.001), confirmed by a placebo test. Paper: `paper/results_betting_lines.md`.
+- Step 4: **betting lines** feed team volume. v4 beat the baseline on the Big-60 by 0.119 pts MAE (p < 0.001), out-of-sample 2020–2023. The lines' own contribution is −0.045 (p < 0.001), confirmed by a placebo test. Paper: `paper/results_betting_lines.md`.
+- Step 5: **betting lines for efficiency**: in games the market expects to be high-scoring, each target, carry and pass attempt is worth more (≈ +1.1% to +1.9% per extra implied point). **Current model (v5) beats the baseline on the Big-60 by 0.188 pts MAE (p < 0.001), out-of-sample 2020–2023.** Paper: `paper/results_eff_lines.md`.
+- **2024 validation (one-time, true holdout): passed.** The frozen v5 model beats the baseline on the Big-60 by 0.158 pts MAE (6.506 → 6.349, p = 0.002) and wins 15 of 18 weeks head-to-head on the baseline's own top 60. Paper: `paper/results_validation_2024.md`.
 - Baseline MAE on development seasons 2019–2023, Big-60-style pool, complete data: **6.76 points per player**. That's the number to beat.

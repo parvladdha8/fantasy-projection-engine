@@ -31,7 +31,13 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-01 | **Placebo**: v4 with lines shuffled within season | Big-60 vs v2 | 6.609 | 6.592 | −0.017 | [−0.049, +0.014] | ✅ No leakage; revealed the regression confound |
 | 2026-11-01 | Team-volume regression on history only (v4-reg) | Big-60 vs v2 | 6.607 | 6.585 | −0.022 | [−0.052, +0.006] | ⚠️ p = 0.07 on Big-60; significant on all players (−0.019) |
 | 2026-11-01 | **Betting-market information** (v4 vs v4-reg) | **Big-60** | 6.585 | 6.540 | **−0.045** | [−0.060, −0.031] | ✅ **Kept** |
-| 2026-11-01 | v4 (current) vs baseline | Big-60 | 6.659 | 6.540 | −0.119 | [−0.163, −0.077] | ✅ Current model |
+| 2026-11-01 | v4 (current) vs baseline | Big-60 | 6.659 | 6.540 | −0.119 | [−0.163, −0.077] | ✅ Superseded by v5 |
+
+| 2026-11-02 | Calibration-only efficiency multiplier (v5-cal, α only) | Big-60 vs v4 | 6.550 | 6.529 | −0.021 | [−0.037, −0.006] | ➖ Control; helps, but not tested as its own feature |
+| 2026-11-02 | **Betting lines for efficiency** (v5 vs v5-cal: β · implied points) | **Big-60** | 6.529 | 6.477 | **−0.052** | [−0.071, −0.033] | ✅ **Kept** (pre-registered headline) |
+| 2026-11-02 | v5 vs v4 | Big-60 | 6.550 | 6.477 | −0.072 | [−0.095, −0.051] | ✅ Adoption rule met |
+| 2026-11-02 | v5 (current) vs baseline | Big-60 | 6.666 | 6.477 | −0.188 | [−0.242, −0.138] | ✅ **Current model** |
+| 2026-11-02 | **2024 VALIDATION** (one-time, frozen v5) vs baseline | Big-60 | 6.506 | 6.349 | **−0.158** | [−0.265, −0.049] | ✅ **Passed (p = 0.002)** |
 
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 

@@ -142,3 +142,37 @@ Format: date, decision, and the reason. Parv's economic reasoning goes here so e
 **Final settings (all dev 2019–2023):** receiving 4/32/100/64/4 with team half-life 8; rushing 1/6/50/16/2, team 4; passing 3/8/200/64/2, team 16 (format: hl_vol/hl_eff/k/hl_long/m). Saved in `reports/opp_eff_params.json`.
 **Paper:** `paper/results_betting_lines.md` (ablation, placebo, coefficients).
 **Live-use requirement (Phase 3):** Pick and verify a pre-kickoff odds source (free/low-cost, terms of service respected) and snapshot lines with timestamps. Until then, the backtest uses nflverse closing lines.
+
+### 2026-11-02: Betting lines for efficiency (v5): pre-registration (written before results)
+**Idea (economics):** Implied team points measure the expected scoring environment. In a game the market expects to be high-scoring, each target, carry or pass attempt should be worth more (more touchdowns, more yards per play), on top of the extra *volume* that v4 already captures.
+**Model (v5) = v4 with an efficiency multiplier per component c (rec, rush, pass):**
+  eff_adj = eff × (1 + α_c + β_c · (implied − ī))
+  ī is the league mean implied points in the training seasons. β_c is the % change in points per opportunity for each extra implied point. α_c is an overall calibration term.
+**Fitting:** Walk-forward by season (same rule as v4's team regression). Coefficients for season s use only seasons < s. Least squares on actual component points against the model's own pre-game baseline (eff × actual opportunities), over every player-game with at least 1 opportunity. Settings (half-lives, k, m) are tuned exactly as in v4 and are **not** re-tuned with the multiplier. The multiplier is fitted afterwards.
+**Control (lesson from the v4 placebo):** v5-cal = the same multiplier with α only (no lines), so a pure calibration effect can't be credited to the lines.
+**Test plan:** Same framework (relevant-player tuning, forward-chained OOS 2020–23, Big-60 union pool, paired week-clustered bootstrap). **Headline: v5 vs v5-cal = value of lines for efficiency.** Adopt v5 only if this is significant (p < 0.05) *and* v5 beats v4. If only the calibration term helps, log it as a finding but don't adopt it here; it would need its own pre-registered test.
+**Expectation:** Small. Touchdowns are noisy, and part of the scoring environment is already in v4's volume. A null result is plausible and will be logged.
+**After this:** The model is frozen and the one-time 2024 validation is run (Parv approved, 2026-11-02).
+
+### 2026-11-02: Betting lines for efficiency: result; v5 becomes the current model
+**Result (OOS 2020–23, Big-60):** The pre-registered headline, v5 vs v5-cal (the value of lines for efficiency), is −0.052 [−0.071, −0.033], p < 0.001. v5 vs v4 is −0.072 (p < 0.001). Both adoption conditions are met. v5 vs baseline is −0.188 (6.666 → 6.477).
+**Fitted environment effect (β), stable across folds:** Each extra implied team point raises points per opportunity by about +1.1% to +1.3% for receiving, +1.2% for rushing and +1.3% to +1.9% for passing. So a team implied for 28 instead of 21 gets roughly +8% to +13% more per opportunity, on top of v4's extra volume.
+**Calibration term (α, a finding, not credited to the lines):** The control's multiplier is below 1, especially for passing (0.91 to 0.95). Shrunk efficiency still over-projects slightly, which is consistent with v4's leftover +0.30 bias. α only (v5-cal) gives −0.021 vs v4 and brings Big-60 bias to about 0. It stays inside v5 as pre-registered (v5 = α + β), but the paper credits the lines only with the −0.052.
+**No re-tuning:** Settings stay as v4's. Final v5 = the v4 settings in `reports/opp_eff_params.json` with `eff_adj = "lines"`. The multiplier is refitted walk-forward each season.
+**Forking-paths note:** This is the sixth model variant tried on 2019–2023. The 2024 validation below is the check against having overfit the dev seasons by choosing among variants.
+
+### 2026-11-02: 2024 validation: pre-registration (written before running; Parv approved C)
+**Frozen model:** v5 with `reports/opp_eff_params.json` (tuned 2019–23). The baseline method is tuned on 2019–23 (the pre-stated rule: lowest Big-60 MAE). Nothing is tuned on 2024. The run is one-time: `scripts/validate_2024.py` refuses to run a second time.
+**Primary test:** Big-60 MAE (union of both models' own pools), v5 vs baseline, paired bootstrap clustered by week (18 clusters, so CIs will be wider than on dev). **Pass = diff < 0 with p < 0.05.**
+**Expectation:** The gain should shrink compared with dev (−0.188), because of the winner's curse from choosing among variants. A gain of roughly −0.08 to −0.15 would be consistent with honest generalisation.
+**Also reported:** All-players MAE, per position (descriptive), RMSE, Spearman, bias, and the weekly head-to-head record on the baseline's own pool (the CLAUDE.md Big-60 format) and on ours.
+**Whatever happens:** The result is logged. If it fails, we don't tweak and re-test on 2024. Any new idea is developed on 2019–23 and goes straight to the 2025 test.
+
+### 2026-11-02: 2024 validation: result (PASSED)
+**Primary test (pre-registered):** Big-60 MAE v5 vs baseline: 6.349 vs 6.506, diff −0.158 [−0.265, −0.049], p = 0.002. **Pass.**
+**Generalisation:** The dev out-of-sample gain was −0.188, and 2024 keeps about 85% of it. That's a modest winner's-curse shrinkage, at the low-shrinkage end of the range we expected (−0.08 to −0.15, slightly better).
+**Secondary:** On all players −0.049 (p = 0.001). RMSE 8.04 vs 8.17. Spearman 0.354 vs 0.317. By position (descriptive): QB −0.25, WR −0.21, RB −0.12, TE −0.03 (n.s.). Head-to-head on the baseline's own Big-60: **15–3**. On our own Big-60: 11–7.
+**Two observations, logged as hypotheses and NOT acted on with 2024 data:**
+1. **Bias flipped:** v5 under-projects in 2024 (−0.37; on dev +0.08). The calibration term α is fitted on earlier seasons, and 2024 may simply have been a higher-scoring year for top players. Watch this in 2025. Recalibration is not tuned on 2024.
+2. **Late-season weakness:** All of the model's losses came in weeks 13–18 (3 of 3 on the baseline pool, 6 of 7 on ours). This could be noise (18 weeks), or a real late-season effect (workload changes, injuries piling up, teams resting starters). CLAUDE.md already lists "late-season workload ramps" as a situational modifier. **The plan:** test a week-of-season effect on 2019–23 only, as a pre-registered feature. If adopted, it goes straight to the 2025 test, with no second look at 2024.
+**2024 is now spent.** `scripts/validate_2024.py` refuses to re-run. Any further feature is judged on 2019–23 (out-of-sample), and the final arbiter is the one-time 2025 test.

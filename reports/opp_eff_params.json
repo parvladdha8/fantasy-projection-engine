@@ -8,7 +8,8 @@
     "team": true,
     "hl_team": 8,
     "lines": true,
-    "team_reg": false
+    "team_reg": false,
+    "eff_adj": "lines"
   },
   "rush": {
     "hl_vol": 1,
@@ -19,7 +20,8 @@
     "team": true,
     "hl_team": 4,
     "lines": true,
-    "team_reg": false
+    "team_reg": false,
+    "eff_adj": "lines"
   },
   "pass": {
     "hl_vol": 3,
@@ -30,7 +32,8 @@
     "team": true,
     "hl_team": 16,
     "lines": true,
-    "team_reg": false
+    "team_reg": false,
+    "eff_adj": "lines"
   },
   "other_hl": 128
 }

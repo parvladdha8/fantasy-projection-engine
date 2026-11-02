@@ -1,7 +1,7 @@
 """Tune opportunity × efficiency settings on ALL development seasons (2019–2023).
 
-Current model (OE v4): volume shrinkage, team context with team volume from history +
-betting lines, tuning loss restricted to fantasy-relevant player-games (option A).
+Current model (OE v5): volume shrinkage, team context with team volume from history +
+betting lines, efficiency scaled by implied team points (walk-forward multiplier), tuning loss restricted to fantasy-relevant player-games (option A).
 These are the settings carried forward to 2024 validation.
 
 Reports the final settings and how sensitive error is to the shrinkage strength k.
@@ -11,7 +11,7 @@ Usage: uv run python scripts/tune_opp_eff.py
 """
 
 import json
-from dataclasses import asdict
+from dataclasses import asdict, replace
 
 from fantasy_projection_engine import DEV_SEASONS
 from fantasy_projection_engine.baseline import prepare_games
@@ -29,6 +29,8 @@ def main():
     pg = add_lines(add_team_totals(pg, build_team_games(ps)), build_team_lines(load_schedules()))
     g = add_components(prepare_games(pg))
     params, grid = tune_opp_eff(g, DEV_SEASONS, None, VOL_SHRINK_V2, relevant_mask(g), team=True, lines=True)
+    # v5: efficiency × scoring-environment multiplier, fitted walk-forward AFTER tuning (not tuned itself)
+    params = {c: (replace(p, eff_adj="lines") if c in COMPONENTS else p) for c, p in params.items()}
     lines = [f"# Opportunity × efficiency tuning (dev {DEV_SEASONS[0]}–{DEV_SEASONS[-1]})", ""]
     for c in COMPONENTS:
         p = params[c]

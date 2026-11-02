@@ -29,6 +29,9 @@ Team context (v3, CompParams.team=True): volume = share × expected team volume
 Betting lines (v4, CompParams.lines=True, requires team=True): team_proj comes from
   betting.predict_team_volume (history + implied points + spread, fitted on earlier seasons).
 
+Efficiency lines (v5, CompParams.eff_adj="lines"): efficiency × (1 + α + β·(implied − ī)),
+  fitted walk-forward (betting.efficiency_multiplier). eff_adj="cal" is the α-only control.
+
 Efficiency: empirical-Bayes shrinkage toward the position's league-wide rate:
 
     eff = (S_pts + k · μ_pos) / (S_opp + k)
@@ -67,6 +70,7 @@ class CompParams:
     hl_team: float = 8   # half-life (team games) for expected team volume
     lines: bool = False  # v4: team volume also uses betting lines (needs team=True)
     team_reg: bool = False  # v4-reg control: walk-forward regression on team history only (no lines)
+    eff_adj: str = "none"   # v5: "lines" = efficiency × scoring-environment multiplier; "cal" = control (α only)
 
 
 DEFAULT_PARAMS = {
@@ -195,6 +199,12 @@ def _efficiency(d: pd.DataFrame, c: str, p: "CompParams", cache: dict) -> tuple[
         eff, shrink = (s_pts + p.k * mu) / (s_opp + p.k), p.k / (s_opp + p.k)
     else:
         eff, shrink = np.where(s_opp > 0, s_pts / np.where(s_opp > 0, s_opp, 1), mu), np.zeros(len(d))
+    if p.eff_adj != "none":
+        key = ("eff_mult", c, p.hl_eff, p.k, p.eff_adj)
+        if key not in cache:
+            from .betting import efficiency_multiplier  # local import avoids a circular import
+            cache[key] = efficiency_multiplier(d, opp, f"pts_{c}", eff, p.eff_adj)
+        eff = eff * cache[key]
     return eff, shrink
 
 

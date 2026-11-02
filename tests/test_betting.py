@@ -58,3 +58,44 @@ def test_history_only_regression_ignores_lines():
     tg2["margin"] = 0.0
     b = predict_team_volume(tg2, "vol", 8, use_lines=False)
     np.testing.assert_allclose(a, b, equal_nan=True)
+
+
+def _eff_games(seed=0, beta=0.03, alpha=0.0):
+    """Synthetic player-games: points per opportunity rise by `beta` (3%) per implied point."""
+    rng = np.random.default_rng(seed)
+    n = 6000
+    d = pd.DataFrame({"season": rng.choice([2018, 2019, 2020], n), "team": rng.choice(list("ABCDEFGH"), n),
+                      "game_id": rng.integers(0, 400, n).astype(str), "opp": rng.integers(1, 12, n).astype(float)})
+    tg = d[["team", "game_id"]].drop_duplicates().assign(implied=lambda t: rng.uniform(15, 31, len(t)))
+    d = d.merge(tg, on=["team", "game_id"])
+    eff = np.full(len(d), 1.5)
+    d["pts"] = eff * d["opp"] * (1 + alpha + beta * (d["implied"] - 23)) + rng.normal(0, 1, len(d))
+    return d, eff
+
+
+def test_efficiency_multiplier_recovers_environment_effect():
+    from fantasy_projection_engine.betting import efficiency_multiplier
+    d, eff = _eff_games()
+    m = efficiency_multiplier(d, "opp", "pts", eff, "lines")
+    s20 = (d["season"] == 2020).to_numpy()
+    slope = np.polyfit(d.loc[s20, "implied"], m[s20], 1)[0]
+    assert slope == pytest.approx(0.03, abs=0.003)
+    assert np.all(m[(d["season"] == 2018).to_numpy()] == 1)   # first season: no earlier data → no adjustment
+
+
+def test_efficiency_multiplier_is_walk_forward():
+    from fantasy_projection_engine.betting import efficiency_multiplier
+    d, eff = _eff_games()
+    before = efficiency_multiplier(d, "opp", "pts", eff, "lines")
+    d2 = d.copy()
+    d2.loc[d2["season"] == 2020, "pts"] *= 3   # change the LAST season's outcomes
+    after = efficiency_multiplier(d2, "opp", "pts", eff, "lines")
+    np.testing.assert_allclose(before, after)  # 2020 coefficients come from 2018–19 only
+
+
+def test_calibration_control_ignores_lines():
+    from fantasy_projection_engine.betting import efficiency_multiplier
+    d, eff = _eff_games(alpha=-0.1)
+    m = efficiency_multiplier(d, "opp", "pts", eff, "cal")
+    s20 = (d["season"] == 2020).to_numpy()
+    assert np.ptp(m[s20]) == 0 and m[s20][0] == pytest.approx(0.9, abs=0.01)

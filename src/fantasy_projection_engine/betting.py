@@ -74,3 +74,33 @@ def predict_team_volume(tg: pd.DataFrame, col: str, hl: float, use_lines: bool =
     out = np.empty(len(t))
     out[order] = pred
     return out
+
+
+def efficiency_multiplier(d: pd.DataFrame, opp_col: str, pts_col: str, eff: np.ndarray, mode: str) -> np.ndarray:
+    """Scoring-environment multiplier on efficiency, walk-forward by season (v5 / v5-cal).
+
+    eff_adj = eff × (1 + α + β · (implied − ī))       mode="lines"
+    eff_adj = eff × (1 + α)                           mode="cal"  (control: no betting information)
+
+    Fitted by least squares:  pts − eff·opp  =  α · (eff·opp) + β · (eff·opp)·(implied − ī)
+    on player-games with ≥ 1 opportunity from seasons < s only; ī = mean implied points over
+    team-games in those same seasons. Seasons with no earlier data get multiplier 1.
+    """
+    seasons = d["season"].to_numpy()
+    opp = d[opp_col].to_numpy(float)
+    base = eff * opp
+    y = d[pts_col].to_numpy(float) - base
+    implied = d["implied"].to_numpy(float)
+    ok = (opp > 0) & np.isfinite(base)
+    team_games = d[["team", "game_id", "season", "implied"]].drop_duplicates(["team", "game_id"])
+    mult = np.ones(len(d))
+    for s in np.unique(seasons):
+        train = ok & (seasons < s)
+        if train.sum() < 50:
+            continue
+        i_bar = team_games.loc[team_games["season"] < s, "implied"].mean()
+        X = base[:, None] if mode == "cal" else np.column_stack([base, base * (implied - i_bar)])
+        b = np.linalg.lstsq(X[train], y[train], rcond=None)[0]
+        here = seasons == s
+        mult[here] = 1 + b[0] + (b[1] * (implied[here] - i_bar) if mode == "lines" else 0)
+    return mult

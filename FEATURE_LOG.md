@@ -63,6 +63,9 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-02 | v10 vs v9 | Interval score, Big-60 | 28.515 | 28.486 | −0.029 | [−0.199, +0.134] | ✅ Not worse on top players |
 | 2026-11-02 | **Per-player spread** (v10 vs v10-novol) | Interval score, Big-60 | 28.912 | 28.486 | **−0.426** | [−0.559, −0.304] | ✅ **Adopted** |
 | 2026-11-02 | v10-novol (projection level only) | Big-60 coverage | target 80% | 85.3% (5.6% below) | — | — | ❌ Too wide for top players without volatility |
+| 2026-11-02 | **Week 1 effect v11** (Week 1 median × (1 + γ_pos), LAD, EB-shrunk to 0) | **Big-60 Week 1 vs v8m** (game-clustered) | 6.158 | 6.105 | **−0.053** | [−0.192, +0.084] | ❌ **Not adopted** (p = 0.21; pre-registered headline) |
+| 2026-11-02 | Week 1 effect v11 (secondary) | All players Week 1 vs v8m | 4.459 | 4.416 | −0.043 | [−0.076, −0.009] | ⚠️ Significant (p = 0.006) but not the headline; does not override the rule |
+| 2026-11-02 | Player-specific Week 1 effect v11p (partial pooling toward position) | Big-60 Week 1 vs v11 | 6.105 | 6.272 | +0.167 | [+0.065, +0.270] | ❌ **Rejected**: worse |
 
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 

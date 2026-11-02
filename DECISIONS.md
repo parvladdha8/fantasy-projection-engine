@@ -337,3 +337,41 @@ The steps add up exactly to the median (checked to 1e-15).
   - About 4% of player-games (first career games) have no history, so they get no projection or explanation.
   - Floor and ceiling start in 2020, because the bands need a season of earlier data.
   - Live use needs a row for each upcoming game (team, opponent, betting line) before stats exist. That belongs to the Phase 3/4 pipeline.
+
+### 2026-11-02: Week 1 effect (v11): pre-registration (written before results)
+**Economic story:** A Week 1 projection is built almost entirely from *last season's* games. In between come the offseason: new teammates and coordinators, rookies, holdouts, players recovering from injury and players who simply aged. Every player's information is therefore stale in the same way. Teams also manage veteran workloads in the opener, after a preseason in which starters barely play. If Week 1 outcomes differ systematically from what the model expects (for example, lower or more spread-out scoring), a Week 1 adjustment captures it. CLAUDE.md lists "Week 1 efficiency" as a core situational effect, with player-specific effects partially pooled.
+**What is adjusted:** The **median** (v8m), not the mean. The week-of-season test showed that shifting the mean toward actual scores raises MAE, because the scores are skewed. So every Week 1 effect is estimated with the same median-targeting (least absolute deviations) method as v8m.
+**Model v11 (position level):** For Week 1 rows, median_w1 = median × (1 + γ_pos).
+  - The raw γ_pos is fitted by LAD through the origin (actual ≈ (1 + γ)·median) on Week 1 fantasy-relevant player-games, seasons 2019..s−1 (walk-forward).
+  - Its standard error se_pos comes from a bootstrap that resamples whole games (200 draws, fixed seed).
+  - **Empirical-Bayes shrinkage toward 0** ("no Week 1 effect", since v8m is already calibrated over all weeks): τ² = max(0, mean(γ_pos²) − mean(se_pos²)) across the four positions, B_pos = se² / (se² + τ²), γ = (1 − B)·raw.
+**Model v11p (player level, on top of v11):** γ_i = γ_pos + (1 − B_i)·ū_i.
+  - ū_i = the player's average Week 1 residual ratio (actual/median_w1 − 1) over his earlier Week 1s (n_i ≤ 3 in dev).
+  - B_i = (σ²/n_i) / (σ²/n_i + τ_p²). σ² is the pooled within-player variance, and τ_p² = max(0, var(ū_i) − mean(σ²/n_i)) across players at that position. Players with no earlier Week 1 get γ_pos.
+  - The average B_i is reported, as rigor rule 2 requires.
+**Test (OOS 2020–23, Week 1 games only):** The model is re-tuned per fold as in every experiment.
+  - Pools: the Big-60 union (base / v8m / v11 / v11p) and all players.
+  - **Paired bootstrap clustered by game** (only 4 Week 1s exist, so week clusters are impossible).
+**Headline:** v11 vs v8m on Big-60 Week 1. Adopt v11 only if p < 0.05. Adopt v11p only if v11p vs v11 also has p < 0.05.
+**Diagnostics (descriptive):**
+  - v8m's Week 1 bias, and its share of outcomes above the median, by position.
+  - Floor/ceiling (v10) coverage in Week 1.
+**Honest power warning:** Only about 250 Big-60 player-games are available (4 seasons × ~62). An effect that cut Week 1 MAE by 0.2 points might still not reach p < 0.05, and a true Week 1 effect moves the season-wide MAE by only 1/18 of its size. A null result here would mean "not detectable with 4 openers", not "proved absent". The player-level effect, with at most 3 earlier openers per player, is expected to shrink almost entirely to the position effect (B_i ≈ 1). Logging that is itself the point of rule 2.
+
+### 2026-11-02: Week 1 effect: result; NOT ADOPTED (position level); player level REJECTED
+**Headline (pre-registered): v11 vs v8m, Big-60 Week 1, OOS 2020–23:** −0.053 points [−0.192, +0.084], p = 0.21. The point estimate favours v11, but it is not significant. **Not adopted.** v8m stays current.
+**The pattern is real-looking, but there are only four openers to test it on:**
+  - **Every fold** estimated a negative Week 1 effect for RBs (−10 to −22% raw) and TEs (−20 to −32% raw).
+  - The diagnostic agrees. In Week 1, only 42% of top players score above their v8m median, against 51% in other weeks. For TEs it is 34% (vs 52%), for RBs 41% (vs 53%).
+  - The median projection is too high by +1.25 points in Week 1. Plausible reasons: stale offseason information, vets' workloads managed in the opener, and new roles not yet settled.
+  - Shrinkage (B = 0.1 to 0.6) roughly halved those raw effects, so v11 moved the right way: Big-60 TE Week 1 MAE fell 5.28 → 4.91.
+  - On all players the gain is significant: −0.043, p = 0.006.
+**Why we still don't adopt it:**
+  1. The adoption rule was fixed in advance: the Big-60 headline with p < 0.05. Adopting on the secondary pool after seeing the results would be a forking-paths choice. This is the same discipline that made us reject things before.
+  2. As the power warning predicted, 287 player-games across 4 openers can't separate a 0.05-point gain from noise. Even if the effect is real, it changes the season-wide MAE by about 0.003.
+**Player-specific Week 1 effects (v11p): rejected, and worse** (+0.167, p > 0.99).
+  - With at most 3 earlier openers per player, partial pooling trusted the player's own history for RBs (average B 0.62–0.85).
+  - It then chased noise: one opener is one game.
+  - This is the rule-2 lesson in its clearest form. Even shrunk, a player effect estimated from 1–3 games hurts. Week 1 deviations are not a stable player trait in this data.
+**Floor/ceiling in Week 1:** Coverage is 82.6% vs 82.5% in other weeks, so the ranges need no Week 1 fix.
+**Logged as a failed feature** (rigor rule 3). It is a candidate to **re-test once more openers exist** (2026+ live seasons), pre-registered the same way. It must not be re-tested on 2024 (spent) or 2025 (test).

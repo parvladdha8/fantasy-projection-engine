@@ -18,6 +18,8 @@ Weekly full-PPR fantasy football projections that try to beat a simple average b
 | `  betting.py` | Betting lines → each team's implied points and spread; team-volume regression. |
 | `  opp_eff.py` | Opportunity × efficiency model: volume × points-per-touch, with shrinkage. |
 | `  tuning.py` | Picks model settings using only the seasons it's given. |
+| `  calibration.py` | Turns the average projection into a median, floor and ceiling. |
+| `  predict.py` | **The one function that makes projections**: median, floor, ceiling and a step-by-step "why" for every player. |
 | `  metrics.py` | Error measures (MAE, RMSE) and the paired significance test. |
 | `scripts/run_phase1.py` | Runs everything above and writes a report. |
 | `scripts/exp_*.py` | Experiments testing whether a feature earns its place. |
@@ -32,6 +34,7 @@ Weekly full-PPR fantasy football projections that try to beat a simple average b
 ```bash
 uv run python scripts/run_phase1.py --refresh   # download data + run everything
 uv run python scripts/run_phase1.py             # rerun using already-downloaded data
+uv run python scripts/check_predict.py          # check the prediction function + show example explanations
 uv run pytest                                   # run the tests
 ```
 
@@ -47,4 +50,5 @@ Phase 1 (Foundation) complete. Phase 2 in progress.
 - Tried and **rejected**: boosting teammates' shares when a player is ruled Out/Doubtful (vacated opportunity). The reallocation is real (about half of a missing player's share goes to same-position teammates), but it didn't lower Big-60 error. Paper: `paper/results_vacated.md`.
 - Step 6: **median calibration**. The Big-60 grades average error, which rewards projecting a player's *typical* (median) score, not his average score. A final per-position adjustment fitted by median regression converts one into the other. The final version (**v8m, current model**) is one percentage per position: a player's typical score is about 87% of his average projection for RBs, 92–93% for WRs and TEs, and about 102% for QBs. **It beats the baseline on the Big-60 by 0.249 pts MAE and on all players by 0.136, out-of-sample 2020–2023.** Paper: `paper/results_median_cal_mult.md`.
 - Step 7: **floor and ceiling** (10th and 90th percentiles). For top players, 80.8% of real scores land between floor and ceiling (target 80%). A typical top WR projected for a 14-point median has a floor near 5 and a ceiling near 27; fantasy football is that noisy. The first version's floors were far too high for backups (51% coverage). The current version (**v10**) lets the range depend on projection level and on each player's own boom-or-bust history: **82.5% coverage for top players, 79.0% for all players.** Paper: `paper/results_intervals_v10.md`.
+- Step 8: **explanations**. One function now makes every projection and shows how it was built, e.g. *recent average 19.9 → +0.7 role & efficiency → −0.8 betting lines: team volume → … → median 18.2 (floor 4.6, ceiling 34.5)*. The steps add up exactly. A check on real data confirms no projection uses later games. Examples: `paper/check_predict.md`.
 - Baseline MAE on development seasons 2019–2023, Big-60-style pool, complete data: **6.76 points per player**. That's the number to beat.

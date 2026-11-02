@@ -312,3 +312,28 @@ Format: date, decision, and the reason. Parv's economic reasoning goes here so e
 **Reading the coefficients (2023 fold):** For volatility, c is negative for floors and positive for ceilings at every position. A more volatile player gets a lower floor *and* a higher ceiling, as expected. Example: an RB with volatility +0.3 above average gets his ceiling raised by about 0.29 × projection.
 **Remaining weakness (logged, not fixed):** Conditional calibration by projection decile is uneven. The lowest projections are over-covered (D1 92%, D2 85%), and the middle-low ones (projections 3–6 points, D4–D6) are under-covered at 71–73%, with 16–20% below the floor. Those players' outcomes are bimodal: a near-zero week (no role that game) or a normal one. A linear quantile map can't bend to that. It barely affects fantasy-relevant players (D9–D10 82%). A future fix could model "plays a real role this week" separately (two-part / hurdle model). That is out of scope now.
 **Current model:** median = v8m; floor/ceiling = v10. Settings recorded in `reports/opp_eff_params.json`.
+
+### 2026-11-02: One prediction function + explanation waterfall (CLAUDE.md model step 5)
+**Decision:** All projections now come from one function, `predict.predict()`. It reads the frozen model from `reports/opp_eff_params.json` and returns, for every player-game, the median, floor and ceiling plus a step-by-step explanation. The website, the in-season pipeline and the final 2025 test will all call this same function, so the number we publish is the number we grade.
+**Frozen baseline:** `baseline_method = ewma_hl8` is now written into the settings file instead of being re-tuned on every run. It is what tuning on 2019–2023 picked and what the 2024 validation used.
+**Explanation method: a sequential waterfall.** It starts from the baseline (recent average). Each step switches on one more piece of the model, with every frozen setting held fixed, and the step's value is how much the projection changes. The steps:
+  1. role & efficiency (own history)
+  2. team context
+  3. betting lines: team volume
+  4. efficiency calibration (α only)
+  5. betting lines: scoring environment
+  6. median adjustment
+
+The steps add up exactly to the median (checked to 1e-15).
+**Why the order matters, and why this order:** A sequential breakdown depends on the order of the steps (a known limitation). We use the order in which each piece was adopted, which is also the order in which each was tested (each against the model before it). So every step answers the same question its experiment answered. Shapley values give an order-free alternative by averaging over all 720 orders, but they cost 720× more to compute and are harder to explain on a website. We don't use them now; they could be a robustness appendix in the paper.
+**Why efficiency calibration is a separate step:** The scoring-environment multiplier is 1 + α + β·(implied − ī). α is a general correction with no game information; only β uses the betting market. Splitting them, the same way as the pre-registered v5-cal control, keeps the "betting lines" step from taking credit for the general correction.
+**Not a feature, so nothing to earn:** This changes no projection. The mean projection is identical to the frozen v5 model validated on 2024 (checked), and the median, floor and ceiling are v8m / v10 as adopted.
+**Safeguards:**
+  - 2025 rows are dropped unless `allow_test=True`, which only the final-test script will pass.
+  - The settings loader refuses any setting the code doesn't implement, and refuses switching on the rejected vacated-opportunity feature.
+  - No-look-ahead check on real data: 2023 week 10 projections are identical (difference 0.0) with or without every later game in the data.
+**Known limits:**
+  - Shrinkage is reported per component (rigor rule 2): how much each player's efficiency is pulled to the league average.
+  - About 4% of player-games (first career games) have no history, so they get no projection or explanation.
+  - Floor and ceiling start in 2020, because the bands need a season of earlier data.
+  - Live use needs a row for each upcoming game (team, opponent, betting line) before stats exist. That belongs to the Phase 3/4 pipeline.

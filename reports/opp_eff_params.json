@@ -1,4 +1,5 @@
 {
+  "baseline_method": "ewma_hl8",
   "rec": {
     "hl_vol": 4,
     "hl_eff": 32,

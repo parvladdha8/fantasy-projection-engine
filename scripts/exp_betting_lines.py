@@ -22,7 +22,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-from fantasy_projection_engine import DEV_SEASONS
+from fantasy_projection_engine import DEV_SEASONS, predict
 from fantasy_projection_engine.baseline import add_projection, big60_pool, prepare_games
 from fantasy_projection_engine.betting import add_lines, build_team_lines
 from fantasy_projection_engine.data import PROJECT_ROOT, load_player_stats, load_players, load_schedules, load_snap_counts
@@ -60,13 +60,7 @@ def shuffle_lines(lines: pd.DataFrame, seed: int = 0) -> pd.DataFrame:
 
 
 def load_games(placebo: bool = False):
-    ps = load_player_stats()
-    pg = build_player_games(ps, load_snap_counts(), load_players())
-    lines = build_team_lines(load_schedules())
-    if placebo:
-        lines = shuffle_lines(lines)
-    pg = add_lines(add_team_totals(pg, build_team_games(ps)), lines)
-    return add_components(prepare_games(pg))
+    return predict.load_games(shuffle_lines if placebo else None)
 
 
 def main():

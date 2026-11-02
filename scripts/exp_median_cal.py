@@ -5,7 +5,7 @@ Pre-registered (DECISIONS.md, 2026-11-02):
   v8ols  = same map fitted by least squares (control)
   Adopt v8 if v8 vs v5 p < 0.05. Mechanism claim needs v8 vs v8ols p < 0.05 AND v8ols winning RMSE.
 
-Usage: uv run python scripts/exp_median_cal.py
+Usage: uv run python scripts/exp_median_cal.py [--mult]
 """
 
 import numpy as np
@@ -22,8 +22,17 @@ from fantasy_projection_engine.tuning import VOL_SHRINK_V2, relevant_mask, tune_
 from exp_betting_lines import fmt, load_games
 from exp_eff_lines import with_eff_adj
 
-MODELS = ["base", "v5", "v8ols", "v8"]
-COMPARE = [("v8", "v5"), ("v8", "v8ols"), ("v8ols", "v5"), ("v8", "base")]
+import sys
+
+MULT = "--mult" in sys.argv   # v8m run (pre-registered 2026-11-02): percentage-only map
+if MULT:
+    MODELS = ["base", "v5", "v8", "v8m"]
+    VARIANTS = [("v8", "lad"), ("v8m", "lad_mult")]
+    COMPARE = [("v8m", "v5"), ("v8m", "v8"), ("v8", "v5"), ("v8m", "base")]
+else:
+    MODELS = ["base", "v5", "v8ols", "v8"]
+    VARIANTS = [("v8ols", "ols"), ("v8", "lad")]
+    COMPARE = [("v8", "v5"), ("v8", "v8ols"), ("v8ols", "v5"), ("v8", "base")]
 
 
 def main():
@@ -36,7 +45,7 @@ def main():
         v4, _ = tune_opp_eff(g, train, cache, VOL_SHRINK_V2, rel, team=True, lines=True)
         settings.append(f"| {s} | {fmt(v4)} |")
         fold["proj_v5"] = project(g, with_eff_adj(v4, "lines"), cache)["proj"].to_numpy()
-        for name, method in [("v8ols", "ols"), ("v8", "lad")]:
+        for name, method in VARIANTS:
             fold[f"proj_{name}"], t = median_calibration(fold, "proj_v5", rel, method)
             coefs += [f"| {s} | {name} | {r.position} | {r.a:+.2f} | {r.b:.3f} | {r.a + 15 * r.b:.2f} |"
                       for r in t[t["season"] == s].itertuples()]
@@ -68,7 +77,7 @@ def main():
     for m in MODELS:
         L.append(f"| {m} | " + " | ".join(f"{mae(big.loc[big.position == p, 'actual'], big.loc[big.position == p, f'proj_{m}']):.3f}"
                                          for p in ["QB", "RB", "WR", "TE"]) + " |")
-    (PROJECT_ROOT / "reports" / "exp_median_cal.md").write_text("\n".join(L))
+    (PROJECT_ROOT / "reports" / ("exp_median_cal_mult.md" if MULT else "exp_median_cal.md")).write_text("\n".join(L))
     print("\n".join(L))
 
 

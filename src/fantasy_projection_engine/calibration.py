@@ -7,6 +7,7 @@ so the mean is systematically too high for MAE. Final step, per position:
 
 Walk-forward: season s uses fit rows from seasons first_season..s−1 only.
 method="ols" fits the same map by least squares (control: recalibration without loss alignment).
+method="lad_mult" drops the intercept: median_proj = b_pos · proj (v8m; 0 stays 0, no lift for fringe players).
 """
 
 import numpy as np
@@ -44,8 +45,11 @@ def median_calibration(df: pd.DataFrame, proj_col: str, fit_mask: np.ndarray, me
             train = ok & (seasons < s) & (pos == p)
             if train.sum() < 50:
                 continue
-            X = np.column_stack([np.ones(train.sum()), x[train]])
-            a, b = quantile_fit(X, y[train], tau) if method == "lad" else np.linalg.lstsq(X, y[train], rcond=None)[0]
+            if method == "lad_mult":
+                a, b = 0.0, quantile_fit(x[train, None], y[train], tau)[0]
+            else:
+                X = np.column_stack([np.ones(train.sum()), x[train]])
+                a, b = quantile_fit(X, y[train], tau) if method == "lad" else np.linalg.lstsq(X, y[train], rcond=None)[0]
             here = (seasons == s) & (pos == p)
             out[here] = a + b * x[here]
             rows.append(dict(season=int(s), position=p, a=a, b=b, n=int(train.sum())))

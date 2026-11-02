@@ -48,7 +48,13 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-02 | Mechanism: v8 (median) vs v8-ols (mean recalibration) | Big-60 | 6.458 | 6.429 | −0.029 | [−0.066, +0.007] | ⚠️ p = 0.064: "median targeting" claim not established |
 | 2026-11-02 | Least-squares recalibration (v8-ols control) | Big-60 vs v5 | 6.484 | 6.458 | −0.026 | [−0.044, −0.007] | ➖ Control; plain recalibration helps too |
 | 2026-11-02 | v8 | All players vs v5 | 4.279 | 4.308 | +0.029 | [+0.012, +0.046] | ⚠️ Worse on fringe players (map extrapolated outside the range it was fitted on) |
-| 2026-11-02 | v8 (current) vs baseline | Big-60 | 6.678 | 6.429 | −0.249 | [−0.324, −0.174] | ✅ Current model (dev OOS) |
+| 2026-11-02 | v8 (current) vs baseline | Big-60 | 6.678 | 6.429 | −0.249 | [−0.324, −0.174] | ✅ Superseded by v8m |
+| 2026-11-02 | **Percentage-only median calibration v8m** (b·proj, no intercept) | **Big-60 vs v5** | 6.484 | 6.430 | **−0.054** | [−0.099, −0.011] | ✅ **Adopted** (p = 0.007) |
+| 2026-11-02 | v8m (safety check) | **All players vs v5** | 4.279 | 4.212 | **−0.067** | [−0.078, −0.058] | ✅ Fringe-player problem fixed |
+| 2026-11-02 | v8m vs v8 | Big-60 | 6.429 | 6.430 | +0.000 | [−0.009, +0.009] | ✅ Same on top players, simpler |
+| 2026-11-02 | v8m (current) vs baseline | Big-60 / all | 6.678 / 4.348 | 6.430 / 4.212 | −0.249 / −0.136 | [−0.326, −0.172] | ✅ **Current model** |
+| 2026-11-02 | Vacated opportunity re-tested on top of v8m (v7m; final, pre-specified) | **Big-60 vs v8m** | 6.430 | 6.428 | **−0.002** | [−0.012, +0.008] | ❌ **Rejected (final)** |
+| 2026-11-02 | v7m placebo | Big-60 vs v8m | 6.430 | 6.433 | +0.003 | [−0.003, +0.009] | ✅ Placebo gain gone once calibration is in the model |
 
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 

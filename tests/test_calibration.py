@@ -50,3 +50,22 @@ def test_calibration_is_walk_forward_and_per_position():
     d2 = d.copy()
     d2.loc[d2.season == 2021, "actual"] *= 3
     np.testing.assert_allclose(median_calibration(d2, "proj", np.ones(n, bool))[0], out)
+
+
+def test_multiplicative_map_has_no_intercept_and_finds_median_ratio():
+    rng = np.random.default_rng(4)
+    n = 20000
+    d = pd.DataFrame({"season": rng.choice([2019, 2020], n), "position": "RB", "proj": rng.uniform(0, 20, n)})
+    d["actual"] = d["proj"] * rng.exponential(1, n)                 # median ratio = ln 2
+    out, coefs = median_calibration(d, "proj", np.ones(n, bool), "lad_mult")
+    c = coefs.set_index("season").loc[2020]
+    # exact answer: min Σ|y − b·x| (x > 0) is the x-weighted median of y/x over the training rows (2019)
+    t = d[d.season == 2019]
+    r = (t.actual / t.proj).to_numpy()
+    o = np.argsort(r)
+    cw = np.cumsum(t.proj.to_numpy()[o])
+    exact = r[o][np.searchsorted(cw, cw[-1] / 2)]
+    assert c["a"] == 0 and c["b"] == pytest.approx(exact, abs=1e-4)
+    assert c["b"] == pytest.approx(np.log(2), abs=0.05)               # population median ratio
+    s20 = (d.season == 2020).to_numpy()
+    np.testing.assert_allclose(out[s20], c["b"] * d.loc[s20, "proj"])

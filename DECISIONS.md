@@ -242,3 +242,29 @@ Format: date, decision, and the reason. Parv's economic reasoning goes here so e
 **What the map does:** It barely changes QBs. RBs drop by about 1.8 to 2.2 points flat (b ≈ 1.0, a ≈ −2), and WRs and TEs by about 7 to 10% (a 15-point projection becomes 13.6 to 14.2). The median error of the Big-60 goes from +0.88 (v5: half of top players score at least 0.9 below projection) to −0.15. The mean bias goes to −0.97, which is exactly what a median forecast of a right-skewed outcome should do.
 **Issue found (not hidden):** On all players, v8 is *worse* than v5 (+0.029), and v8-ols much worse (+0.403). The map is fitted on fantasy-relevant players only, and its intercept (for example the OLS WR a = +3.8) is applied to fringe players far below that range. That is extrapolation outside the fitted range. It barely matters for the Big-60 (top players), but the website shows every player. **Not fixed yet:** the possible fixes (fit on all players; apply only within the fitted range; a multiplicative-only map) are *new variants*, so they need Parv's choice and their own pre-registration.
 **Pre-specified follow-ups (now triggered):** re-test v7 on top of v8, and floor/ceiling via τ = 0.1 / 0.9. Both are on hold until the fringe-player issue is decided, because both would build on the map.
+
+### 2026-11-02: Percentage-only median calibration (v8m): pre-registration (Parv chose this fix; written before results)
+**Change from v8:** Drop the intercept. median_proj = b_pos · proj_v5, fitted by least absolute deviations on the same rows (fantasy-relevant player-games, seasons 2019..s−1, walk-forward). Reading it: "a player's typical score is b% of his average projection". A 0 projection stays 0, so nothing is added to fringe players. This is one number per position.
+**Decision rules:**
+  1. **Primary:** v8m vs v5 on the Big-60, p < 0.05.
+  2. **Safety (the reason for the change):** on all players, v8m must not be significantly worse than v5 (the 95% CI upper bound of v8m − v5 must be ≥ 0, or the difference ≤ 0).
+  3. **Replace v8** if both hold. v8m vs v8 on the Big-60 is reported. We accept v8m even if it's slightly worse there, as long as it's not significantly worse (p(v8m better) > 0.05 against it, i.e. the CI includes 0 or favours v8m). Simplicity and safety for every displayed player outweigh a non-significant difference.
+  If rule 2 fails, v8 stays and the issue stays open.
+
+### 2026-11-02: v8m: result; ADOPTED, replaces v8
+**Rule 1:** v8m vs v5 on the Big-60 is −0.054 [−0.099, −0.011], p = 0.007. ✅
+**Rule 2 (safety):** On all players, v8m vs v5 is **−0.067** [−0.078, −0.058]. It is now *better* on fringe players too (v8 was +0.029). ✅
+**Rule 3:** v8m vs v8 on the Big-60 is +0.000 [−0.009, +0.009]. Identical on top players. ✅ **v8m is the current model.**
+**The fitted percentages are very stable across folds** (typical score as % of the mean projection): QB 102–104%, RB 85–87%, WR 92–96%, TE 91–92%. Interpretation: RB scoring is the most right-skewed (long TD runs, boom-or-bust usage), so the median RB week is well below his average. QB scoring is the least skewed (steady passing yards), and the slight >100% means QB projections ran a touch low. These four numbers are easy to defend and to show on the website.
+**Big-60 median error** is −0.14 (v5 +0.88). The mean bias is −0.96, as expected for a median forecast.
+**Frozen:** `reports/opp_eff_params.json` gains `"final_calibration": "lad_mult"`. The map itself is refitted walk-forward each season (seasons 2019..s−1, fantasy-relevant player-games).
+**Next (pre-specified 2026-11-02):** (1) Re-test vacated opportunity (v7) once on top of v8m. (2) Floor/ceiling with τ = 0.1 / 0.9.
+
+### 2026-11-02: Vacated opportunity on top of v8m (v7m): rules for the one pre-specified re-test (written before results)
+**Model:** v7m = v5 + vacated opportunity (exactly as v7), then the v8m percentage map fitted on v7's own projections. **Placebo:** the same with absences moved to random teams (as before).
+**Adopt only if:** v7m vs v8m on the Big-60 has p < 0.05, *and* the placebo vs v8m is not significantly better (p > 0.05), *and* v7m vs the placebo has p < 0.05. This is the last test of this feature on dev seasons. It won't be retried again.
+
+### 2026-11-02: Vacated opportunity re-test (v7m): REJECTED (final for dev seasons)
+**Result (Big-60):** v7m vs v8m is −0.002 [−0.012, +0.008], p = 0.35. v7m vs placebo is −0.005 (p = 0.19). Rule 1 fails, so the feature is rejected. It is not retried on dev seasons again.
+**The placebo now gives nothing** (+0.003 vs v8m, where v7's placebo gave −0.009). This confirms the earlier reading: v7's placebo "gain" was a crude downward recalibration, and the median map now does that job properly.
+**Conclusion for the paper:** Teammate absences shift shares in a real and stable way (λ_same ≈ 0.5), but the information is already in the model by kickoff. Short volume half-lives absorb multi-week absences, and betting lines price injury news. The loss mismatch was only part of the earlier failure. Injury data stays in the pipeline for live use and for the player's own status (a separate, later feature).

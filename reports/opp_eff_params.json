@@ -35,5 +35,6 @@
     "team_reg": false,
     "eff_adj": "lines"
   },
-  "other_hl": 128
+  "other_hl": 128,
+  "final_calibration": "lad_mult"
 }

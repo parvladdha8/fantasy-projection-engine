@@ -107,11 +107,22 @@ def check_zero_rows(ps: pd.DataFrame):
         "INFO: zero-point games",
         True,
         f"{share:.1%} of skill-position rows score exactly 0. Rows only exist when a player "
-        "records a stat, so active players with no touches are mostly absent (see DECISIONS.md)",
+        "records a stat; snap-count zero games are added separately in player_games.py",
     )
 
 
-def run_all(ps: pd.DataFrame, sched: pd.DataFrame) -> list[dict]:
+def check_snap_id_match(snaps: pd.DataFrame, players: pd.DataFrame, min_rate: float = 0.995):
+    """Snap counts use PFR IDs; nearly all skill-position rows should map to nflverse IDs."""
+    sk = snaps[(snaps["game_type"] == "REG") & snaps["position"].isin(SKILL_POSITIONS)]
+    rate = sk["pfr_player_id"].isin(set(players["pfr_id"].dropna())).mean()
+    return _result(
+        f"Snap-count player IDs map to nflverse (>= {min_rate:.1%})",
+        rate >= min_rate,
+        f"{rate:.2%} of {len(sk)} skill-position snap rows mapped",
+    )
+
+
+def run_all(ps: pd.DataFrame, sched: pd.DataFrame, snaps=None, players=None) -> list[dict]:
     return [
         check_duplicates(ps),
         check_missing_keys(ps),
@@ -121,4 +132,4 @@ def run_all(ps: pd.DataFrame, sched: pd.DataFrame) -> list[dict]:
         check_team_count(ps),
         check_plausible_points(ps),
         check_zero_rows(ps),
-    ]
+    ] + ([check_snap_id_match(snaps, players)] if snaps is not None else [])

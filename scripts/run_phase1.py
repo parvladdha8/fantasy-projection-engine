@@ -14,7 +14,8 @@ import pandas as pd
 
 from fantasy_projection_engine import DEV_SEASONS
 from fantasy_projection_engine.baseline import METHODS, add_projection, big60_pool, prepare_games, score
-from fantasy_projection_engine.data import PROJECT_ROOT, load_player_stats, load_schedules, pull_raw
+from fantasy_projection_engine.data import PROJECT_ROOT, load_player_stats, load_players, load_schedules, load_snap_counts, pull_raw
+from fantasy_projection_engine.player_games import build_player_games
 from fantasy_projection_engine.quality import run_all
 
 
@@ -32,14 +33,14 @@ def md_table(df: pd.DataFrame, index: bool = False) -> str:
 def main():
     if "--refresh" in sys.argv:
         pull_raw()
-    ps, sched = load_player_stats(), load_schedules()
+    ps, sched, snaps, players = load_player_stats(), load_schedules(), load_snap_counts(), load_players()
 
     lines = ["# Phase 1 report", "", "## Data-quality checks", ""]
-    checks = run_all(ps, sched)
+    checks = run_all(ps, sched, snaps, players)
     for c in checks:
         lines.append(f"- **{'PASS' if c['passed'] else 'FAIL'}**: {c['name']}. {c['detail']}")
 
-    games = prepare_games(ps)
+    games = prepare_games(build_player_games(ps, snaps, players))  # includes snap-count zero games
     rows = []
     by_pos = {}
     for m in METHODS:

@@ -22,9 +22,13 @@ def pull_raw(seasons: list[int] = SEASONS) -> dict[str, Path]:
     paths = {
         "player_stats": RAW_DIR / "player_stats_week.parquet",
         "schedules": RAW_DIR / "schedules.parquet",
+        "snap_counts": RAW_DIR / "snap_counts.parquet",
+        "players": RAW_DIR / "players.parquet",
     }
     nfl.load_player_stats(seasons, summary_level="week").write_parquet(paths["player_stats"])
     nfl.load_schedules(seasons).write_parquet(paths["schedules"])
+    nfl.load_snap_counts(seasons).write_parquet(paths["snap_counts"])
+    nfl.load_players().write_parquet(paths["players"])  # ID crosswalk (gsis <-> pfr)
     return paths
 
 
@@ -34,3 +38,11 @@ def load_player_stats() -> pd.DataFrame:
 
 def load_schedules() -> pd.DataFrame:
     return pd.read_parquet(RAW_DIR / "schedules.parquet")
+
+
+def load_snap_counts() -> pd.DataFrame:
+    return pd.read_parquet(RAW_DIR / "snap_counts.parquet")
+
+
+def load_players() -> pd.DataFrame:
+    return pd.read_parquet(RAW_DIR / "players.parquet")

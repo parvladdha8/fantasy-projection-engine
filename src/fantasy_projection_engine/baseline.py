@@ -16,11 +16,18 @@ from .metrics import mae, rmse
 BIG60_SLOTS = {"QB": 10, "RB": 20, "WR": 20, "TE": 10}
 
 
-def prepare_games(ps: pd.DataFrame) -> pd.DataFrame:
-    """Regular-season skill-position games, one row per player-week, in time order."""
-    g = ps[(ps["season_type"] == "REG") & (ps["position"].isin(SKILL_POSITIONS))]
-    g = g[["player_id", "player_display_name", "position", "team", "season", "week", "fantasy_points_ppr"]]
-    return g.rename(columns={"fantasy_points_ppr": "actual"}).sort_values(["player_id", "season", "week"]).reset_index(drop=True)
+def prepare_games(player_games: pd.DataFrame, include_snap_zeros: bool = True) -> pd.DataFrame:
+    """One row per player-game in time order (input: player_games.build_player_games).
+
+    include_snap_zeros=False reproduces the Phase 1 behaviour for comparison: the
+    zero-point snap-only games are still in the table (so they get scored), but
+    their points are hidden from the history (`hist`), so averages skip them.
+    """
+    g = player_games.rename(columns={"fantasy_points_ppr": "actual"}).copy()
+    g["hist"] = g["actual"]
+    if not include_snap_zeros:
+        g.loc[g["source"] == "snaps_only", "hist"] = float("nan")
+    return g.sort_values(["player_id", "season", "week"]).reset_index(drop=True)
 
 
 # Each method maps a player's PAST points (already shifted) to a projection.
@@ -37,7 +44,8 @@ def add_projection(games: pd.DataFrame, method: str, col: str = "proj") -> pd.Da
     """Add a column of walk-forward projections. Players' first-ever game gets NaN."""
     fn = METHODS[method]
     out = games.copy()
-    past = out.groupby("player_id")["actual"].shift(1)  # <- the leakage guard
+    hist = out["hist"] if "hist" in out else out["actual"]
+    past = hist.groupby(out["player_id"]).shift(1)  # <- the leakage guard
     out[col] = past.groupby(out["player_id"]).transform(fn)
     return out
 

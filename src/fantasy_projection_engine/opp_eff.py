@@ -29,6 +29,10 @@ Team context (v3, CompParams.team=True): volume = share × expected team volume
 Betting lines (v4, CompParams.lines=True, requires team=True): team_proj comes from
   betting.predict_team_volume (history + implied points + spread, fitted on earlier seasons).
 
+Vacated opportunity (v7, CompParams.vacated=True, rec/rush only): share × (1 + λ_same·V_same +
+  λ_other·V_other), V = vacated share of teammates ruled Out/Doubtful (injuries.py); pass
+  `absences` to project().
+
 Efficiency lines (v5, CompParams.eff_adj="lines"): efficiency × (1 + α + β·(implied − ī)),
   fitted walk-forward (betting.efficiency_multiplier). eff_adj="cal" is the α-only control.
 
@@ -70,6 +74,7 @@ class CompParams:
     hl_team: float = 8   # half-life (team games) for expected team volume
     lines: bool = False  # v4: team volume also uses betting lines (needs team=True)
     team_reg: bool = False  # v4-reg control: walk-forward regression on team history only (no lines)
+    vacated: bool = False   # v7: share × (1 + λ·vacated share of absent teammates) (needs team=True)
     eff_adj: str = "none"   # v5: "lines" = efficiency × scoring-environment multiplier; "cal" = control (α only)
 
 
@@ -129,6 +134,15 @@ def _dsum(d: pd.DataFrame, col: str, hl: float, cache: dict) -> np.ndarray:
     return cache[key]
 
 
+def _dsum_post(d: pd.DataFrame, col: str, hl: float, cache: dict) -> np.ndarray:
+    """Decayed sum INCLUDING the current row: the player's state right after this game."""
+    key = ("post", col, hl)
+    if key not in cache:
+        x = np.ones(len(d)) if col is None else d[col].to_numpy(float)
+        cache[key] = 0.5 ** (1.0 / hl) * _dsum(d, col, hl, cache) + x
+    return cache[key]
+
+
 def team_projection(d: pd.DataFrame, team_col: str, hl: float, cache: dict, lines: bool = False,
                     reg: bool = False) -> np.ndarray:
     """For each player-game: his team's expected `team_col`.
@@ -155,14 +169,18 @@ def team_projection(d: pd.DataFrame, team_col: str, hl: float, cache: dict, line
     return cache[key]
 
 
-def _share(d: pd.DataFrame, opp: str, p: "CompParams", cache: dict) -> np.ndarray:
-    """Player's shrunk share of team volume (see module docstring)."""
+def _share(d: pd.DataFrame, opp: str, p: "CompParams", cache: dict, post: bool = False) -> np.ndarray:
+    """Player's shrunk share of team volume (see module docstring).
+
+    post=True: the share as it stands right AFTER each game (used for a player who then misses games).
+    """
     tcol = TEAM_COLS[opp]
-    w = _dsum(d, None, p.hl_vol, cache)
-    short = _dsum(d, opp, p.hl_vol, cache) / np.where(w > 0, _dsum(d, tcol, p.hl_vol, cache), 1)
+    ds = _dsum_post if post else _dsum
+    w = ds(d, None, p.hl_vol, cache)
+    short = ds(d, opp, p.hl_vol, cache) / np.where(w > 0, ds(d, tcol, p.hl_vol, cache), 1)
     if p.m > 0:
-        w_long = _dsum(d, None, p.hl_long, cache)
-        long = _dsum(d, opp, p.hl_long, cache) / np.where(w_long > 0, _dsum(d, tcol, p.hl_long, cache), 1)
+        w_long = ds(d, None, p.hl_long, cache)
+        long = ds(d, opp, p.hl_long, cache) / np.where(w_long > 0, ds(d, tcol, p.hl_long, cache), 1)
         share = (w * short + p.m * long) / np.where(w + p.m > 0, w + p.m, 1)
     else:
         share = short
@@ -176,8 +194,11 @@ def component_arrays(d: pd.DataFrame, c: str, p: CompParams, cache: dict) -> tup
     """
     opp = COMPONENTS[c]
     if p.team:
-        vol = _share(d, opp, p, cache) * team_projection(d, TEAM_COLS[opp], p.hl_team, cache, p.lines, p.team_reg)
-        return (vol, *_efficiency(d, c, p, cache))
+        share = _share(d, opp, p, cache)
+        tp = team_projection(d, TEAM_COLS[opp], p.hl_team, cache, p.lines, p.team_reg)
+        if p.vacated and c != "pass" and ("links", cache.get("absence_tag")) in cache:
+            share = share * _vacated_mult(d, c, share * tp, p, cache)
+        return (share * tp, *_efficiency(d, c, p, cache))
     w = _dsum(d, None, p.hl_vol, cache)
     s_vol = _dsum(d, opp, p.hl_vol, cache)
     if p.m > 0:
@@ -186,6 +207,18 @@ def component_arrays(d: pd.DataFrame, c: str, p: CompParams, cache: dict) -> tup
         s_vol, w = s_vol + p.m * long_run, w + p.m * (w_long > 0)
     vol = np.where(w > 0, s_vol / np.where(w > 0, w, 1), np.nan)
     return (vol, *_efficiency(d, c, p, cache))
+
+
+def _vacated_mult(d: pd.DataFrame, c: str, base: np.ndarray, p: "CompParams", cache: dict) -> np.ndarray:
+    from .injuries import vacated, vacated_multiplier  # local import avoids a circular import
+    tag = cache["absence_tag"]
+    key = ("vac_mult", c, tag, p)
+    if key not in cache:
+        v_same, v_other = vacated(d, cache[("links", tag)], _share(d, COMPONENTS[c], p, cache, post=True))
+        mult, coefs = vacated_multiplier(d, COMPONENTS[c], base, v_same, v_other)
+        cache[key], cache[("vac_coefs", c, tag, p)] = mult, coefs
+        cache[("vac_V", c, tag, p)] = v_same + v_other
+    return cache[key]
 
 
 def _efficiency(d: pd.DataFrame, c: str, p: "CompParams", cache: dict) -> tuple[np.ndarray, np.ndarray]:
@@ -208,7 +241,8 @@ def _efficiency(d: pd.DataFrame, c: str, p: "CompParams", cache: dict) -> tuple[
     return eff, shrink
 
 
-def project(games: pd.DataFrame, params: dict = DEFAULT_PARAMS, sums_cache: dict | None = None) -> pd.DataFrame:
+def project(games: pd.DataFrame, params: dict = DEFAULT_PARAMS, sums_cache: dict | None = None,
+            absences: pd.DataFrame | None = None, absence_tag: str = "real") -> pd.DataFrame:
     """Add projection columns. `games` must be sorted by player_id, season, week.
 
     Adds per component c: vol_c, eff_c, shrink_c, proj_c; plus proj_other and proj (total).
@@ -216,6 +250,10 @@ def project(games: pd.DataFrame, params: dict = DEFAULT_PARAMS, sums_cache: dict
     """
     d = add_components(games) if "pts_rec" not in games else games.copy()
     cache = {} if sums_cache is None else sums_cache
+    cache["absence_tag"] = absence_tag
+    if absences is not None and ("links", absence_tag) not in cache:
+        from .injuries import link_absences
+        cache[("links", absence_tag)] = link_absences(d, absences)
     total = np.zeros(len(d))
     for c in COMPONENTS:
         vol, eff, shrink = component_arrays(d, c, params[c], cache)

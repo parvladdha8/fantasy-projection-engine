@@ -32,6 +32,19 @@ def pull_raw(seasons: list[int] = SEASONS) -> dict[str, Path]:
     return paths
 
 
+def pull_injuries(seasons: list[int] = SEASONS) -> Path:
+    """Download weekly injury reports (practice status + game designation). Separate from pull_raw
+    so adding it doesn't re-download (and possibly change) the data earlier results were built on."""
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    path = RAW_DIR / "injuries.parquet"
+    nfl.load_injuries(seasons).write_parquet(path)
+    return path
+
+
+def load_injuries() -> pd.DataFrame:
+    return pd.read_parquet(RAW_DIR / "injuries.parquet")
+
+
 def load_player_stats() -> pd.DataFrame:
     return pd.read_parquet(RAW_DIR / "player_stats_week.parquet")
 

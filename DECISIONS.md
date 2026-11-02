@@ -195,3 +195,30 @@ Format: date, decision, and the reason. Parv's economic reasoning goes here so e
 3. **Shrinkage behaved as designed.** For WR and RB, and QB in most folds, the phases were pure noise, and EB shrank them fully to the position mean (B ≈ 1). Only TE showed a consistent pattern (late +10 to 12% raw, B ≈ 0.15), and acting on it still hurt out-of-sample.
 **What this says about 2024:** The late-season losses in the 2024 validation are most likely noise (18 weeks, small margins), not a missing feature.
 **Logged as a failed feature** (rigor rule 3). It goes in the paper. The `situational.py` shrinkage machinery is kept for the next situational modifiers (Week 1, prime time, weather), which need the same partial pooling.
+
+### 2026-11-02: Injury data added
+**Source:** nflverse `load_injuries` (official weekly NFL injury reports: practice participation + game designation), 2018–2025, 45,337 rows, saved as `data/raw/injuries.parquet`. It is downloaded separately (`pull_injuries`), so the data behind earlier results is not re-downloaded or changed. Free; it is the documented nflverse source CLAUDE.md names.
+**Audit (dev 2019–23, skill positions, 8,363 rows):**
+  - Timing: the median report is final 51 hours before kickoff (the Friday report). 0.10% were modified after kickoff. **Rule:** entries modified after kickoff are ignored (no look-ahead).
+  - What designations mean (share who then played): Out 0.1%, Doubtful 1.5%, Questionable 65%, practice-only listing 89%. Did-not-practise 20%, Limited 69%, Full 89%.
+  - 1 duplicate player-week and 6 rows with no matching game (negligible; handled in code).
+
+### 2026-11-02: Vacated opportunity (v7): pre-registration (written before results)
+**Idea (economics):** Targets and carries are a fixed pie in the short run. When a teammate is ruled out, his slice goes to the players who remain. The model should raise their shares *before* their own history catches up.
+**Who counts as absent (Friday information only):** Designated **Out or Doubtful** on the final pre-kickoff report (≈ 99% miss the game). Questionable players are *not* treated as absent here. Their uncertainty (35% miss) and the player's own reduced role when he does play are a separate, later feature. We deliberately do *not* use "did not play" or the 90-minute inactive list, because we haven't verified a live source for it yet.
+**Absent player's vacated share:** His own shrunk share of team volume (same formula and settings as the model) as of his most recent game for that team, this season or last.
+**Model (v7) = v5 with, for receiving and rushing:**
+  share′ = share × (1 + λ_same · V_same + λ_other · V_other)
+  V_same / V_other = total vacated share of absent teammates at the player's own position / at other positions. λ is "% growth in a player's share per unit of vacated share", so his gain is proportional to his existing role (the WR1 absorbs more than the WR4). λ is fitted walk-forward (seasons < s, least squares on actual volume, no intercept, so teams without absences are untouched). Settings are not re-tuned. Passing is excluded: a backup QB has no meaningful share history. QB changes are a separate later feature.
+**Placebo (pre-registered, same run):** v7-placebo reassigns each team-week's absences to a random other team in the same week. It should give ≈ 0 gain. If it doesn't, something leaks.
+**Test plan:** Same framework (relevant-player tuning, forward-chained OOS 2020–23, Big-60 union pool, paired week-clustered bootstrap). **Headline: v7 vs v5.** Adopt only if p < 0.05 and the placebo shows no significant gain. Descriptive: player-games with V > 0. **Expectation:** Positive but modest overall. Most player-weeks have no relevant absence, so the gain is concentrated in the affected games.
+
+### 2026-11-02: Vacated opportunity (v7): REJECTED; v5 stays current
+**Result (OOS 2020–23, Big-60):** The pre-registered headline, v7 vs v5, is **+0.005** [−0.005, +0.015]: no gain, so rejected. In the 41% of Big-60 player-games with an absent teammate it is +0.013 (n.s.).
+**The reallocation itself is real and stable:** λ_same = +0.43 to +0.60 for receiving and +0.25 to +0.46 for rushing in every fold. The placebo λ_same ≈ 0, as it should be. So when a WR with a 20% target share is ruled out, a teammate WR's share grows about 10% (0.5 × 0.20), proportional to his role. About half of the vacated share goes to existing same-position players; the rest goes to replacements and other positions. These are good numbers for the paper and the website's explanations, even though they don't lower error.
+**Why it doesn't lower error (interpretation):**
+1. **Mean vs median again** (as with v6). λ is fitted by least squares, so it targets the *mean*. Big-60 projections were already slightly high (bias +0.08), and v7 raises them further (+0.14). Fantasy points are right-skewed, so MAE rewards the *median*.
+2. **Most of the information is already in the model.** Multi-week absences are already absorbed by the short volume half-lives (1 to 4 games), and betting lines move on injury news.
+**The placebo "helped" (−0.009, p = 0.011). This is not leakage.** The shuffled absences come from other teams, so they carry no information about these games. But the placebo fit negative λs (−0.24 to −0.33 for other positions), which lowers projections for a random ~40% of players. That acts as a crude downward recalibration, consistent with point 1. It is the same lesson as the v4 placebo: an added regression structure can "work" through calibration, not information. That's why placebo controls are run every time.
+**Systemic lesson, now seen twice (v6 and v7):** Our calibration steps fit means (least squares), but the model is graded on MAE. A possible pre-registered experiment is to fit calibration steps by least absolute deviations (median regression). That would be a *loss-alignment* change to the whole model, not a new feature. It needs its own pre-registration because of forking paths.
+**Kept:** The injury data pipeline (`injuries.py`, timing rule, links) is kept for the next uses: the player's own Questionable/practice status, QB changes, and live projections.

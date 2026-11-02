@@ -1,0 +1,77 @@
+"""Tests for injury absences and vacated opportunity."""
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from fantasy_projection_engine.injuries import build_absences, link_absences, vacated, vacated_multiplier
+
+
+def _sched():
+    return pd.DataFrame({"game_type": ["REG"], "season": [2020], "week": [3], "gameday": ["2020-09-27"],
+                         "gametime": ["13:00"], "home_team": ["KC"], "away_team": ["OAK"]})
+
+
+def _inj(modified):
+    return pd.DataFrame({"game_type": "REG", "position": ["WR", "WR", "RB"], "season": 2020.0, "week": 3.0,
+                         "team": ["KC", "KC", "OAK"], "gsis_id": ["a", "b", "c"],
+                         "report_status": ["Out", "Questionable", "Doubtful"],
+                         "date_modified": pd.to_datetime(modified, utc=True)})
+
+
+def test_absences_use_only_pre_kickoff_out_or_doubtful():
+    # kickoff 13:00 ET = 17:00 UTC. Player c's entry was modified after kickoff → ignored.
+    a = build_absences(_inj(["2020-09-25 20:00", "2020-09-25 20:00", "2020-09-27 18:00"]), _sched())
+    assert a["player_id"].tolist() == ["a"]                         # b is only Questionable
+    a2 = build_absences(_inj(["2020-09-25 20:00"] * 3), _sched())
+    assert set(a2["player_id"]) == {"a", "c"} and (a2.loc[a2.player_id == "c", "team"] == "LV").all()
+
+
+def _games():
+    return pd.DataFrame({"player_id": ["a", "a", "a", "x", "x", "y"], "team": ["KC", "KC", "NYJ", "KC", "KC", "KC"],
+                         "season": [2019, 2020, 2020, 2020, 2020, 2020], "week": [10, 1, 2, 1, 3, 3],
+                         "position": ["WR", "WR", "WR", "WR", "WR", "TE"]})
+
+
+def test_link_uses_latest_earlier_game_for_same_team():
+    d = _games()
+    l = link_absences(d, pd.DataFrame({"player_id": ["a"], "team": ["KC"], "season": [2020], "week": [3]}))
+    assert l["row"].tolist() == [1]          # 2020 wk 1 for KC (wk 2 was for NYJ → not KC's share)
+
+
+def test_vacated_split_by_position_and_excludes_self():
+    d = _games()
+    links = pd.DataFrame({"player_id": ["a", "x"], "team": "KC", "season": 2020, "week": 3,
+                          "position": "WR", "row": [1, 3]})
+    share_post = np.array([0, 0.25, 0, 0.10, 0, 0])
+    same, other = vacated(d, links, share_post)
+    # row 4 = x himself (listed but played): only a's 0.25 counts as same-position vacated
+    assert same[4] == pytest.approx(0.25) and other[4] == pytest.approx(0)
+    # row 5 = TE y: both WRs' shares are "other position"
+    assert same[5] == pytest.approx(0) and other[5] == pytest.approx(0.35)
+
+
+def test_multiplier_recovers_lambda_and_is_walk_forward():
+    rng = np.random.default_rng(0)
+    n = 9000
+    d = pd.DataFrame({"season": rng.choice([2018, 2019, 2020], n)})
+    base = rng.uniform(1, 10, n)
+    vs = np.where(rng.random(n) < 0.2, rng.uniform(0, 0.3, n), 0)
+    vo = np.where(rng.random(n) < 0.2, rng.uniform(0, 0.3, n), 0)
+    d["opp"] = base * (1 + 1.2 * vs + 0.3 * vo) + rng.normal(0, 1, n)
+    m, coefs = vacated_multiplier(d, "opp", base, vs, vo)
+    lam = {s: (a, b) for s, a, b in coefs}
+    assert lam[2020][0] == pytest.approx(1.2, abs=0.1) and lam[2020][1] == pytest.approx(0.3, abs=0.1)
+    assert np.all(m[(d.season == 2018).to_numpy()] == 1)
+    assert np.all(m[vs + vo == 0] == 1)                     # no absences → untouched
+    d2 = d.copy()
+    d2.loc[d2.season == 2020, "opp"] *= 4
+    np.testing.assert_allclose(vacated_multiplier(d2, "opp", base, vs, vo)[0], m)
+
+
+def test_post_game_state_equals_next_game_prior():
+    from fantasy_projection_engine.opp_eff import _dsum, _dsum_post
+    d = pd.DataFrame({"player_id": ["a"] * 4 + ["b"] * 3, "targets": [5, 7, 2, 9, 1, 4, 6]})
+    cache = {}
+    prior, post = _dsum(d, "targets", 4, cache), _dsum_post(d, "targets", 4, cache)
+    np.testing.assert_allclose(post[[0, 1, 2, 4, 5]], prior[[1, 2, 3, 5, 6]])

@@ -41,6 +41,9 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-02 | Week-of-season effect v6 (γ per position × wk 1–4/5–12/13–18, EB-shrunk) | **Big-60 vs v6-pos** | 6.473 | 6.480 | **+0.007** | [−0.000, +0.016] | ❌ **Rejected** (pre-registered headline) |
 | 2026-11-02 | Week-of-season v6 | Big-60 weeks 13–18 vs v5 (descriptive) | 6.543 | 6.564 | +0.021 | [−0.003, +0.046] | ❌ Worse late even though it fixed late bias |
 | 2026-11-02 | Position-only recalibration (v6-pos control) | Big-60 vs v5 | 6.484 | 6.473 | −0.011 | [−0.025, +0.005] | ❌ Not significant (p = 0.086); not adopted |
+| 2026-11-02 | Vacated opportunity v7 (teammates Out/Doubtful → share × (1 + λ·V)) | **Big-60 vs v5** | 6.481 | 6.486 | **+0.005** | [−0.005, +0.015] | ❌ **Rejected** (pre-registered headline) |
+| 2026-11-02 | v7, Big-60 games with an absent teammate (descriptive) | vs v5 | 6.517 | 6.530 | +0.013 | [−0.011, +0.035] | ❌ No gain even where it applies |
+| 2026-11-02 | v7 placebo (absences moved to random teams) | Big-60 vs v5 | 6.481 | 6.472 | −0.009 | [−0.017, −0.002] | ⚠️ Placebo "helped": acts as downward recalibration (see DECISIONS) |
 
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 

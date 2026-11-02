@@ -20,6 +20,15 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-01 | Option A: volume shrinkage on vs off | Big-60, v2_rel vs v1_rel | 6.612 | 6.601 | −0.011 | [−0.019, −0.002] | ✅ Significant (still earns its place) |
 | 2026-11-01 | Option A, OE v2 | All players vs baseline | 4.348 | 4.360 | +0.013 | [−0.002, +0.028] | ➖ Slightly worse on fringe players (expected; not our target) |
 
+| 2026-11-01 | **Ablation** (same framework, relevant-player tuning): decomposition alone | Big-60 vs baseline | 6.648 | 6.651 | +0.003 | [−0.025, +0.031] | ❌ No gain by itself |
+| 2026-11-01 | Ablation: + efficiency shrinkage | Big-60 vs no-shrinkage OE | 6.651 | 6.597 | −0.054 | [−0.088, −0.022] | ✅ Main source of gain |
+| 2026-11-01 | Ablation: + volume shrinkage | Big-60 vs v1 | 6.597 | 6.587 | −0.011 | [−0.020, −0.001] | ✅ Kept |
+
+| 2026-11-01 | Team context v3: volume = shrunk share × team's historical average volume | **Big-60 vs v2** | 6.621 | 6.629 | +0.009 | [−0.019, +0.035] | ❌ **Rejected for now** (no Big-60 gain) |
+| 2026-11-01 | Team context v3 | All players vs v2 | 4.360 | 4.352 | −0.009 | [−0.016, −0.002] | ➖ Small gain on fringe players; not our target |
+
+**Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
+
 **Note on OE v2:** Widening the search grid made Big-60 results *worse*. The tuner chose more extreme settings (1-game recent memory) that reduce error across all players but not for starters. This shows the tuning objective is mismatched with the evaluation target. Both runs are logged so there's no cherry-picking of the better one.
 
 **Note:** The first opportunity × efficiency run was *in-sample* (tuned and scored on 2019–2023): Big-60 −0.014, all −0.044. Those numbers are superseded by the forward-chained out-of-sample results above. The gap shows how much in-sample tuning flatters a model.

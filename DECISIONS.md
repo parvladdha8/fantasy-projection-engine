@@ -106,3 +106,17 @@ Format: date, decision, and the reason. Parv's economic reasoning goes here so e
 **Sensitivity:** The error curves are flat near the optimum (k from 25 to 100 changes MSE by < 0.2%), so conclusions don't hinge on exact values. The settings vary across folds (e.g. receiving efficiency half-life 16–64), which is consistent with that flatness.
 **Grid edges (logged, not chased):** Rushing hl_vol = 1 and "other" hl = 128 sit at grid edges. Both are natural limits ("about the last game" and "about a constant"). In the folds, receiving m = 8 was at the grid maximum. Testing m = 16 would be a separate, logged experiment.
 **Forking-paths caution:** We have now tried several variants on dev seasons (v1, v2 narrow, v2 wide, option A). The 2024 validation season is the real check that this isn't an artefact of trying many things.
+
+### 2026-11-01: Paper ablation: shrinkage is the source of the gain
+**Setup:** All four models run in one forward-chained experiment (OOS 2020–23) with the same tuning target (relevant players), the same Big-60 union pool and the same bootstrap. See `paper/results_shrinkage_ablation.md`.
+**Result (Big-60 MAE):** baseline 6.648, opp × eff without shrinkage 6.651, + efficiency shrinkage 6.597, + volume shrinkage 6.587 (current; −0.062 vs baseline, CI [−0.103, −0.019], p = 0.003).
+**Step contributions:** Decomposition alone +0.003 (n.s.). Efficiency shrinkage −0.054 (p < 0.001). Volume shrinkage −0.011 (p = 0.013).
+**Interpretation:** Splitting points into volume × efficiency doesn't help by itself, because it just divides the noise into two parts. The gain comes from treating each part with the right amount of skepticism (empirical Bayes). This is the paper's core methodological claim.
+**Note:** The "v1" here is tuned on relevant players. The earlier v1 result (Big-60 −0.003, tuned on all players) used the old tuning target, and both stay logged.
+
+### 2026-11-01: Team context (v3): rejected for now; v2 stays current
+**Design (pre-registered):** Player volume = shrunk share of team volume (same short/long-run blend as volume) × the team's decayed historical average volume (half-life 4–64 team games, tuned). It uses the player's current team, so a traded player gets his new team's volume. Same framework as the paper ablation.
+**Result (OOS 2020–23):** On the Big-60, v3 vs v2 is +0.009 (CI [−0.019, +0.035], p = 0.72): no gain. On all players it's −0.009 (significant), but that isn't our target.
+**Why (interpretation):** A team's *historical* average volume adds almost nothing beyond a player's own volume history, which already reflects his team's volume. Team pass volume is also noisy and mean-reverting week to week (it depends on game script). The value of the share × team structure should come from **forward-looking** team volume: betting lines (implied points and spread → expected plays and pass rate) and teammate injuries (vacated share). Neither is in yet.
+**Decision:** Keep v2 as the current model. Keep the team-context code as the base for betting-market and injury features, and re-test v3 when those arrive.
+**Expectation was stated in advance:** Before running, we expected little gain on its own.

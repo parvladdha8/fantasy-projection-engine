@@ -17,6 +17,15 @@ player's own long-run average (half-life `hl_long`) with prior strength `m` game
   S_vol, W = decayed sums of opportunities and of games (half-life hl_vol)
   m = 0 reproduces v1 (no volume shrinkage).
 
+Team context (v3, CompParams.team=True): volume = share × expected team volume
+
+  share      = (W · short_share + m · long_share) / (W + m)
+               short/long_share = player's decayed opportunities ÷ his team's decayed
+               totals IN THE SAME GAMES (half-lives hl_vol / hl_long). Same shrinkage
+               structure as volume, applied to the role instead of the raw count.
+  team_proj  = the team's decayed average total over its previous games (half-life hl_team).
+               Uses the player's CURRENT team, so a traded player gets his new team's volume.
+
 Efficiency: empirical-Bayes shrinkage toward the position's league-wide rate:
 
     eff = (S_pts + k · μ_pos) / (S_opp + k)
@@ -31,6 +40,8 @@ No look-ahead: every sum covers games strictly before the one being projected.
 """
 
 from dataclasses import dataclass
+
+from .team_context import TEAM_COLS
 
 import numpy as np
 import pandas as pd
@@ -49,6 +60,8 @@ class CompParams:
     k: float       # shrinkage prior strength (pseudo-opportunities)
     hl_long: float = 64  # half-life (games) of the long-run volume target
     m: float = 0         # volume shrinkage strength (pseudo-games); 0 = v1
+    team: bool = False   # v3: volume = share × expected team volume
+    hl_team: float = 8   # half-life (team games) for expected team volume
 
 
 DEFAULT_PARAMS = {
@@ -107,12 +120,44 @@ def _dsum(d: pd.DataFrame, col: str, hl: float, cache: dict) -> np.ndarray:
     return cache[key]
 
 
+def team_projection(d: pd.DataFrame, team_col: str, hl: float, cache: dict) -> np.ndarray:
+    """For each player-game: his team's decayed average `team_col` over the TEAM's earlier games."""
+    key = ("team_proj", team_col, hl)
+    if key not in cache:
+        tg = d[["team", "season", "week", "game_id", team_col]].drop_duplicates(["team", "game_id"])
+        tg = tg.sort_values(["team", "season", "week"]).reset_index(drop=True)
+        teams = tg["team"].to_numpy()
+        s = decayed_prior_sum(tg[team_col].to_numpy(float), teams, hl)
+        w = decayed_prior_sum(np.ones(len(tg)), teams, hl)
+        tg["_proj"] = np.where(w > 0, s / np.where(w > 0, w, 1), np.nan)
+        merged = d[["team", "game_id"]].merge(tg[["team", "game_id", "_proj"]], on=["team", "game_id"], how="left")
+        cache[key] = merged["_proj"].to_numpy()
+    return cache[key]
+
+
+def _share(d: pd.DataFrame, opp: str, p: "CompParams", cache: dict) -> np.ndarray:
+    """Player's shrunk share of team volume (see module docstring)."""
+    tcol = TEAM_COLS[opp]
+    w = _dsum(d, None, p.hl_vol, cache)
+    short = _dsum(d, opp, p.hl_vol, cache) / np.where(w > 0, _dsum(d, tcol, p.hl_vol, cache), 1)
+    if p.m > 0:
+        w_long = _dsum(d, None, p.hl_long, cache)
+        long = _dsum(d, opp, p.hl_long, cache) / np.where(w_long > 0, _dsum(d, tcol, p.hl_long, cache), 1)
+        share = (w * short + p.m * long) / np.where(w + p.m > 0, w + p.m, 1)
+    else:
+        share = short
+    return np.where(w > 0, share, np.nan)
+
+
 def component_arrays(d: pd.DataFrame, c: str, p: CompParams, cache: dict) -> tuple[np.ndarray, ...]:
     """Volume, efficiency and shrinkage share for component c. `d` must already have components.
 
     `cache` must only ever be used with this same `d` (keys are column names).
     """
     opp = COMPONENTS[c]
+    if p.team:
+        vol = _share(d, opp, p, cache) * team_projection(d, TEAM_COLS[opp], p.hl_team, cache)
+        return (vol, *_efficiency(d, c, p, cache))
     w = _dsum(d, None, p.hl_vol, cache)
     s_vol = _dsum(d, opp, p.hl_vol, cache)
     if p.m > 0:
@@ -120,6 +165,12 @@ def component_arrays(d: pd.DataFrame, c: str, p: CompParams, cache: dict) -> tup
         long_run = _dsum(d, opp, p.hl_long, cache) / np.where(w_long > 0, w_long, 1)
         s_vol, w = s_vol + p.m * long_run, w + p.m * (w_long > 0)
     vol = np.where(w > 0, s_vol / np.where(w > 0, w, 1), np.nan)
+    return (vol, *_efficiency(d, c, p, cache))
+
+
+def _efficiency(d: pd.DataFrame, c: str, p: "CompParams", cache: dict) -> tuple[np.ndarray, np.ndarray]:
+    """Shrunk points per opportunity and the shrinkage share."""
+    opp = COMPONENTS[c]
     s_opp, s_pts = _dsum(d, opp, p.hl_eff, cache), _dsum(d, f"pts_{c}", p.hl_eff, cache)
     if ("mu", c) not in cache:
         cache[("mu", c)] = league_rate(d, f"pts_{c}", opp).to_numpy()
@@ -128,7 +179,7 @@ def component_arrays(d: pd.DataFrame, c: str, p: CompParams, cache: dict) -> tup
         eff, shrink = (s_pts + p.k * mu) / (s_opp + p.k), p.k / (s_opp + p.k)
     else:
         eff, shrink = np.where(s_opp > 0, s_pts / np.where(s_opp > 0, s_opp, 1), mu), np.zeros(len(d))
-    return vol, eff, shrink
+    return eff, shrink
 
 
 def project(games: pd.DataFrame, params: dict = DEFAULT_PARAMS, sums_cache: dict | None = None) -> pd.DataFrame:

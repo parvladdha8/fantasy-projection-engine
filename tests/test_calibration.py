@@ -69,3 +69,33 @@ def test_multiplicative_map_has_no_intercept_and_finds_median_ratio():
     assert c["b"] == pytest.approx(np.log(2), abs=0.05)               # population median ratio
     s20 = (d.season == 2020).to_numpy()
     np.testing.assert_allclose(out[s20], c["b"] * d.loc[s20, "proj"])
+
+
+def test_quantile_band_learns_floor_near_zero_and_volatility_widening():
+    from fantasy_projection_engine.calibration import quantile_band
+    rng = np.random.default_rng(5)
+    n = 40000
+    d = pd.DataFrame({"season": rng.choice([2019, 2020], n), "position": "WR", "proj": rng.uniform(0, 20, n),
+                      "z": rng.uniform(-0.3, 0.3, n)})   # keeps spread 0.5 + z > 0
+    d["actual"] = d["proj"] + d["proj"] * (0.5 + d["z"]) * rng.normal(0, 1, n)   # spread grows with z
+    hi, t = quantile_band(d, "proj", "z", np.ones(n, bool), 0.9)
+    c = t.set_index("season").loc[2020]
+    q = 1.2816                                     # 90th pct of N(0,1)
+    assert c["b"] == pytest.approx(1 + 0.5 * q, abs=0.05)
+    assert c["c"] == pytest.approx(q, abs=0.1)     # wider ceiling for more volatile players
+    assert np.isnan(hi[(d.season == 2019).to_numpy()]).all()
+
+
+def test_shrunk_volatility_uses_past_only_and_shrinks_short_histories():
+    from fantasy_projection_engine.calibration import shrunk_volatility
+    g = pd.DataFrame({"player_id": ["a"] * 20 + ["b"] * 20, "position": "WR",
+                      "season": [2019] * 10 + [2020] * 10 + [2019] * 10 + [2020] * 10,
+                      "actual": [10, 30] * 10 + [15, 17] * 10})
+    z = shrunk_volatility(g)
+    g2 = g.copy()
+    g2.loc[19, "actual"] = 500                                      # change a's LAST game
+    np.testing.assert_allclose(shrunk_volatility(g2)[:20], z[:20])  # z for a's games unaffected (past only)
+    a20 = z[(g.player_id == "a") & (g.season == 2020)]
+    b20 = z[(g.player_id == "b") & (g.season == 2020)]
+    assert (a20 > 0).all() and (b20 < 0).all()                     # boom-bust a above average, steady b below
+    assert (z[(g.season == 2019)] == 0).all()                       # no earlier season → no position mean → z = 0

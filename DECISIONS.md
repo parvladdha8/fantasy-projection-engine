@@ -288,3 +288,27 @@ Format: date, decision, and the reason. Parv's economic reasoning goes here so e
 **Honest scale:** For a typical Big-60 player the median is 14.1, the floor 5.2 and the ceiling 26.7. A width of about 21 points is the true week-to-week uncertainty.
 **Diagnostic, volatility terciles (descriptive):** steady 81.4%, middle 83.4%, volatile 78.2%, no history 74.7%. The pattern is mild: volatile players are slightly under-covered. This is modest evidence for the per-player spread feature, which is now justified but should be expected to give only a small gain.
 **Problem (not a pass criterion, but it blocks website use):** On **all players**, coverage is only 51.4%, with 32.0% below the floor. Fringe and backup players often score near 0 (zero-snap and garbage-time weeks), so a floor at 30% of the projection is far too high for them. The percentages were fitted on fantasy-relevant players only. **Status:** v9 is adopted for the Big-60 / top players. The website must not show v9 floors for fringe players until this is fixed. The fix (e.g. letting the floor and ceiling depend on projection level or role) should be designed together with the per-player-spread feature and pre-registered.
+
+### 2026-11-02: Floor / ceiling for all players + per-player spread (v10): pre-registration (written before results)
+**Problems being fixed:** (1) v9 floors are far too high for fringe players: 51% all-player coverage. (2) Volatile players are mildly under-covered (78% vs 81–83%).
+**Model:** For each position and τ ∈ {0.1, 0.9}, a quantile regression fitted on **all** player-games (not only relevant ones), walk-forward on seasons 2019..s−1:
+  q_τ = a_τ + b_τ · proj + c_τ · proj · z
+  - proj = the v5 mean projection.
+  - The intercept a lets low projections get a floor near 0 (which fixes fringe players).
+  - z = the player's **shrunk volatility** minus the position average. Volatility = coefficient of variation of his previous ≤ 16 games, shrunk toward the position's average CV with weight n/(n + 8) (n = games available; prior strength 8 is fixed in advance, not tuned). Players with < 2 games get z = 0. This uses pre-game data only. c is "how much wider the range gets for a more volatile player, in proportion to his projection".
+  - The median stays v8m (the point projection doesn't change here).
+  - If quantiles cross, floor = min(floor, median) and ceiling = max(ceiling, median).
+**Control (v10-novol):** The same without the z term (c = 0). It separates the per-player spread from the projection-level fix.
+**Pass criteria (OOS 2020–23):**
+  1. Calibration on **both** the Big-60 and all players: 77–83% inside, each tail 7–13%.
+  2. Interval score vs v9: all players better (p < 0.05). Big-60 not significantly worse (p(v10 worse) ≥ 0.05).
+  3. Per-player spread: v10 vs v10-novol interval score on the Big-60, p < 0.05. If 1–2 pass but 3 fails, adopt v10-novol.
+**Diagnostics:** Coverage by position, by volatility tercile and by projection decile (all players).
+
+### 2026-11-02: v10 floor/ceiling: result; ADOPTED (with per-player spread)
+**Criterion 1 (calibration in both pools):** Big-60 82.5% inside (7.2% below, 10.3% above). All players 79.0% (11.5% / 9.5%). Both are within the 77–83% and 7–13% bands. ✅ Every position is 78.6–79.5% on all players (v9 was 44–61%).
+**Criterion 2:** Interval score vs v9: all players −2.193 (p < 0.001) ✅. Big-60 −0.029 [−0.199, +0.134], not worse ✅.
+**Criterion 3 (per-player spread):** v10 vs v10-novol on the Big-60 is −0.426 [−0.559, −0.304], p < 0.001 ✅. Without volatility, top-player ranges are too wide (85.3%, only 5.6% below the floor), because fitting on all players inflates the spread. Volatility lets steady stars get narrow ranges and boom-or-bust players wide ones. Volatility terciles on the Big-60 under v10: 82.4 / 82.1 / 83.0%, so calibration is now even across player types.
+**Reading the coefficients (2023 fold):** For volatility, c is negative for floors and positive for ceilings at every position. A more volatile player gets a lower floor *and* a higher ceiling, as expected. Example: an RB with volatility +0.3 above average gets his ceiling raised by about 0.29 × projection.
+**Remaining weakness (logged, not fixed):** Conditional calibration by projection decile is uneven. The lowest projections are over-covered (D1 92%, D2 85%), and the middle-low ones (projections 3–6 points, D4–D6) are under-covered at 71–73%, with 16–20% below the floor. Those players' outcomes are bimodal: a near-zero week (no role that game) or a normal one. A linear quantile map can't bend to that. It barely affects fantasy-relevant players (D9–D10 82%). A future fix could model "plays a real role this week" separately (two-part / hurdle model). That is out of scope now.
+**Current model:** median = v8m; floor/ceiling = v10. Settings recorded in `reports/opp_eff_params.json`.

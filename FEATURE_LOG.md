@@ -58,6 +58,11 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-02 | **Floor/ceiling v9** (10th/90th pct = position % of mean projection) | Big-60 coverage | target 80% | 80.8% (9.6% / 9.5% tails) | — | — | ✅ **Calibrated** |
 | 2026-11-02 | Floor/ceiling v9 | Big-60 interval score vs baseline-centred benchmark | 28.946 | 28.515 | −0.431 | [−0.659, −0.211] | ✅ **Adopted** |
 | 2026-11-02 | Floor/ceiling v9 | All-players coverage | target 80% | 51.4% (32.0% below floor) | — | — | ⚠️ Badly miscalibrated for fringe players |
+| 2026-11-02 | **Floor/ceiling v10** (a + b·proj + c·proj·volatility, fitted on all players) | Coverage Big-60 / all | target 80% | **82.5% / 79.0%** (tails 7.2/10.3, 11.5/9.5) | — | — | ✅ **Calibrated in both pools** |
+| 2026-11-02 | v10 vs v9 | Interval score, all players | 20.987 | 18.793 | −2.193 | [−2.355, −2.045] | ✅ Fringe problem fixed |
+| 2026-11-02 | v10 vs v9 | Interval score, Big-60 | 28.515 | 28.486 | −0.029 | [−0.199, +0.134] | ✅ Not worse on top players |
+| 2026-11-02 | **Per-player spread** (v10 vs v10-novol) | Interval score, Big-60 | 28.912 | 28.486 | **−0.426** | [−0.559, −0.304] | ✅ **Adopted** |
+| 2026-11-02 | v10-novol (projection level only) | Big-60 coverage | target 80% | 85.3% (5.6% below) | — | — | ❌ Too wide for top players without volatility |
 
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 

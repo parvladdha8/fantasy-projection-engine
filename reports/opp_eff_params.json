@@ -40,6 +40,11 @@
   "intervals": {
     "floor_tau": 0.1,
     "ceiling_tau": 0.9,
-    "method": "lad_mult"
+    "method": "quantile_band",
+    "volatility": {
+      "window": 16,
+      "prior": 8
+    },
+    "fit_rows": "all player-games"
   }
 }

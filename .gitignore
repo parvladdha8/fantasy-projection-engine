@@ -1,0 +1,21 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Secrets — never commit
+.env
+.env.*
+
+# Data (re-downloadable; too large for git)
+data/
+
+# OS / editor
+.DS_Store
+.pytest_cache/

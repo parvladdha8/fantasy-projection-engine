@@ -85,4 +85,24 @@ Format: date, decision, and the reason. Parv's economic reasoning goes here so e
 **Result (forward-chained OOS 2020–23):** Volume shrinkage beats v1 on the Big-60 in both grid versions (−0.030 narrow, −0.018 wide; both significant). Against the baseline it's not significant in either (p = 0.065 narrow, 0.18 wide). Big-60 bias: baseline +0.95, v1 +0.77, v2 +0.69.
 **Lesson:** Widening the grid *hurt* out-of-sample Big-60 error. The tuner minimises squared error over **all** player-games, which are mostly backups and fringe players with volatile roles, so it rewards very fast memories. Starters' roles are more stable. The tuning objective doesn't match what we're graded on.
 **Multiple-comparisons caution:** Per-position results (e.g. WR p = 0.036) come from 4 positions × 2 comparisons × several runs. Individual position "wins" at p ≈ 0.03 should not be quoted as findings.
-**Open decision (for Parv):** What loss should the tuner minimise? See the options in the session notes / next DECISIONS entry.
+**Open decision (for Parv):** What loss should the tuner minimise? Resolved in the next entry.
+
+### 2026-11-01: Tuning target = fantasy-relevant players (option A), chosen by Parv
+**Decision:** Model settings are tuned to minimise squared error only on "relevant" player-games: each week's top 15 QB / 30 RB / 30 WR / 15 TE by the fixed EWMA-hl8 baseline's **pre-game** projection (12,600 of 51,938 player-games).
+**Reason (economics):** Estimate the model on the population you'll predict for. Backups have volatile roles and reward jumpy settings; starters have stable roles. The pool is a bit wider than the Big-60 to give more data and to avoid tuning only on players right at the cutoff. Membership uses no outcome information.
+**Considered and rejected:** (B) weighting by expected volume: smoother, but harder to explain. (C) tuning directly on Big-60 MAE: the pool shifts with the settings, so it's noisy and slow and the most prone to overfitting.
+**Pre-registered:** The pool definition, wide grid, forward-chaining and comparisons were fixed before results were seen (see the `scripts/exp_tuning_target.py` docstring).
+**Result (OOS 2020–23):** OE v2 tuned this way beats the baseline on the Big-60 by −0.055 MAE (CI [−0.093, −0.014], p = 0.004). That's the **first significant Big-60 win**. Volume shrinkage still earns its place under this target (−0.011, significant). Big-60 bias: baseline +0.92 → +0.53. It's slightly worse on all players (+0.013), which is expected and acceptable because starters are what we're graded on.
+**Scale, honestly:** 0.055 pts is about 0.8% of MAE. Weekly fantasy outcomes are mostly noise, so gains come in small, hard-won steps.
+
+### 2026-11-01: Current model settings (OE v2, tuned on all of dev 2019–2023, relevant-player loss)
+| Component | Volume half-life | Long-run half-life | m (vol. prior, games) | Efficiency half-life | k (eff. prior) |
+|---|---|---|---|---|---|
+| Receiving | 4 | 64 | 4 | 12 | 50 targets |
+| Rushing | 1 | 16 | 2 | 6 | 100 carries |
+| Passing | 6 | 16 | 2 | 6 | 100 attempts |
+| Other (fumbles, return TDs) | — | — | — | 128 (≈ constant) | — |
+**Reading them:** Rushing again needs the most efficiency shrinkage (k = 100 carries). Rushing volume reacts fastest (half-life 1, blended roughly 50/50 with a 16-game average), because backfield roles shift with injuries and game script. Receiving volume uses a longer anchor (64 games), because target roles are sticky.
+**Sensitivity:** The error curves are flat near the optimum (k from 25 to 100 changes MSE by < 0.2%), so conclusions don't hinge on exact values. The settings vary across folds (e.g. receiving efficiency half-life 16–64), which is consistent with that flatness.
+**Grid edges (logged, not chased):** Rushing hl_vol = 1 and "other" hl = 128 sit at grid edges. Both are natural limits ("about the last game" and "about a constant"). In the folds, receiving m = 8 was at the grid maximum. Testing m = 16 would be a separate, logged experiment.
+**Forking-paths caution:** We have now tried several variants on dev seasons (v1, v2 narrow, v2 wide, option A). The 2024 validation season is the real check that this isn't an artefact of trying many things.

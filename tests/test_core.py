@@ -66,3 +66,13 @@ def test_big60_pool_uses_projection_not_actual():
     pool = big60_pool(df)
     assert len(pool) == 10
     assert set(pool.index) == set(range(2, 12))
+
+
+def test_relevant_pool_slots_and_projection_only():
+    from fantasy_projection_engine.baseline import RELEVANT_SLOTS
+    df = pd.DataFrame({
+        "season": [2019] * 40, "week": [1] * 40, "position": ["RB"] * 40,
+        "proj": list(range(40)), "actual": list(range(40))[::-1],
+    })
+    pool = big60_pool(df, slots=RELEVANT_SLOTS)
+    assert len(pool) == 30 and set(pool.index) == set(range(10, 40))

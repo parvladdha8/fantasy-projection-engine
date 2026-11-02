@@ -10,8 +10,8 @@ import itertools
 import numpy as np
 import pandas as pd
 
-from .baseline import METHODS, add_projection, big60_pool, score
-from .opp_eff import COMPONENTS, DEFAULT_PARAMS, CompParams, project
+from .baseline import METHODS, RELEVANT_SLOTS, add_projection, big60_pool, score
+from .opp_eff import COMPONENTS, DEFAULT_PARAMS, CompParams, component_arrays, project
 
 HL_VOL = [1, 2, 3, 4, 6, 8, 12]
 HL_EFF = [2, 3, 4, 6, 8, 12, 16, 32, 64]
@@ -22,21 +22,35 @@ VOL_SHRINK_V1 = [(64, 0)]
 VOL_SHRINK_V2 = [(64, 0)] + [(hl, m) for hl in (8, 16, 32, 64) for m in (1, 2, 4, 8)]
 
 
+def relevant_mask(g: pd.DataFrame) -> np.ndarray:
+    """Fantasy-relevant player-games: weekly top 15 QB / 30 RB / 30 WR / 15 TE by the
+    fixed EWMA-hl8 baseline's PRE-GAME projection. No outcome information is used."""
+    p = add_projection(g, "ewma_hl8", "_proj_rel")
+    return g.index.isin(big60_pool(p, "_proj_rel", RELEVANT_SLOTS).index)
+
+
 def tune_opp_eff(g: pd.DataFrame, seasons: list[int], cache: dict | None = None,
-                 vol_shrink=VOL_SHRINK_V1) -> tuple[dict, dict]:
+                 vol_shrink=VOL_SHRINK_V1, row_mask: np.ndarray | None = None) -> tuple[dict, dict]:
     """Per component, pick (hl_vol, hl_eff, k, hl_long, m) minimising that component's MSE on `seasons`.
 
+    row_mask: optionally restrict the tuning loss to these rows (e.g. relevant_mask(g)).
+
     Returns (params, grid_results) where grid_results[c] = sorted list of (mse, hl_vol, hl_eff, k, hl_long, m).
+    `g` must already have components (opp_eff.add_components).
     """
     cache = {} if cache is None else cache
     rows = g["season"].isin(seasons).to_numpy()
+    if row_mask is not None:
+        rows = rows & row_mask
     params, grid = dict(DEFAULT_PARAMS), {}
+    actual = {c: g[f"pts_{c}"].to_numpy(float) for c in COMPONENTS}
     for c in COMPONENTS:
         res = []
         for hv, he, k, (hl, vm) in itertools.product(HL_VOL, HL_EFF, K, vol_shrink):
-            p = project(g, {**DEFAULT_PARAMS, c: CompParams(hv, he, k, hl, vm)}, cache)
-            m = rows & p[f"proj_{c}"].notna().to_numpy()
-            res.append((float(np.mean((p.loc[m, f"pts_{c}"] - p.loc[m, f"proj_{c}"]) ** 2)), hv, he, k, hl, vm))
+            vol, eff, _ = component_arrays(g, c, CompParams(hv, he, k, hl, vm), cache)
+            pred = vol * eff
+            m = rows & ~np.isnan(pred)
+            res.append((float(np.mean((actual[c][m] - pred[m]) ** 2)), hv, he, k, hl, vm))
         res.sort()
         grid[c] = res
         params[c] = CompParams(*res[0][1:])

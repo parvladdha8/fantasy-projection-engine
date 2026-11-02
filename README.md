@@ -35,5 +35,5 @@ uv run pytest                                   # run the tests
 ## Current status
 Phase 1 (Foundation) complete. Phase 2 in progress.
 - Step 1 done: snap-count zero games (a significant improvement; see `FEATURE_LOG.md`).
-- Step 2 in progress: opportunity × efficiency model (`opp_eff.py`). It beats the baseline overall but not yet on the Big-60.
+- Step 2: opportunity × efficiency model (`opp_eff.py`) with shrinkage on both volume and efficiency, tuned on fantasy-relevant players. **It beats the baseline on the Big-60 by 0.055 pts MAE (p = 0.004), out-of-sample 2020–2023.**
 - Baseline MAE on development seasons 2019–2023, Big-60-style pool, complete data: **6.76 points per player**. That's the number to beat.

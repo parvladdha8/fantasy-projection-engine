@@ -1,18 +1,24 @@
 {
   "rec": {
     "hl_vol": 4,
-    "hl_eff": 6,
-    "k": 25
+    "hl_eff": 12,
+    "k": 50,
+    "hl_long": 64,
+    "m": 4
   },
   "rush": {
-    "hl_vol": 3,
-    "hl_eff": 4,
-    "k": 100
+    "hl_vol": 1,
+    "hl_eff": 6,
+    "k": 100,
+    "hl_long": 16,
+    "m": 2
   },
   "pass": {
-    "hl_vol": 3,
+    "hl_vol": 6,
     "hl_eff": 6,
-    "k": 50
+    "k": 100,
+    "hl_long": 16,
+    "m": 2
   },
   "other_hl": 128
 }

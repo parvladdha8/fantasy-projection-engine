@@ -15,6 +15,11 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-01 | OE v2, wide grid | Big-60 vs baseline | 6.653 | 6.635 | −0.018 | [−0.058, +0.020] | ❌ Not significant (p = 0.18) |
 | 2026-11-01 | OE v2, wide grid | All players vs v1 | 4.313 | 4.320 | +0.007 | [+0.001, +0.014] | ❌ Slightly worse |
 
+| 2026-11-01 | Tuning target = fantasy-relevant players (option A), OE v2, OOS 2020–23 | **Big-60 vs baseline** | 6.656 | 6.601 | **−0.055** | [−0.093, −0.014] | ✅ **Significant (p = 0.004)** |
+| 2026-11-01 | Option A, OE v2 | Big-60 vs v2 tuned on all players | 6.634 | 6.601 | −0.032 | [−0.054, −0.010] | ✅ Significant |
+| 2026-11-01 | Option A: volume shrinkage on vs off | Big-60, v2_rel vs v1_rel | 6.612 | 6.601 | −0.011 | [−0.019, −0.002] | ✅ Significant (still earns its place) |
+| 2026-11-01 | Option A, OE v2 | All players vs baseline | 4.348 | 4.360 | +0.013 | [−0.002, +0.028] | ➖ Slightly worse on fringe players (expected; not our target) |
+
 **Note on OE v2:** Widening the search grid made Big-60 results *worse*. The tuner chose more extreme settings (1-game recent memory) that reduce error across all players but not for starters. This shows the tuning objective is mismatched with the evaluation target. Both runs are logged so there's no cherry-picking of the better one.
 
 **Note:** The first opportunity × efficiency run was *in-sample* (tuned and scored on 2019–2023): Big-60 −0.014, all −0.044. Those numbers are superseded by the forward-chained out-of-sample results above. The gap shows how much in-sample tuning flatters a model.

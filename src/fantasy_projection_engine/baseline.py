@@ -50,11 +50,15 @@ def add_projection(games: pd.DataFrame, method: str, col: str = "proj") -> pd.Da
     return out
 
 
-def big60_pool(df: pd.DataFrame, proj_col: str = "proj") -> pd.DataFrame:
+# Wider "fantasy-relevant" pool used as the tuning population (option A, DECISIONS.md)
+RELEVANT_SLOTS = {"QB": 15, "RB": 30, "WR": 30, "TE": 15}
+
+
+def big60_pool(df: pd.DataFrame, proj_col: str = "proj", slots: dict = BIG60_SLOTS) -> pd.DataFrame:
     """Each week's top-N per position BY PROJECTION (pre-game info only)."""
     d = df.dropna(subset=[proj_col])
     d = d.assign(_rank=d.groupby(["season", "week", "position"])[proj_col].rank(ascending=False, method="first"))
-    keep = d["_rank"] <= d["position"].map(BIG60_SLOTS)
+    keep = d["_rank"] <= d["position"].map(slots)
     return d[keep].drop(columns="_rank")
 
 

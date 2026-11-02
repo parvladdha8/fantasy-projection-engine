@@ -98,44 +98,54 @@ def league_rate(df: pd.DataFrame, pts_col: str, opp_col: str) -> pd.Series:
     return pd.Series(rate.reindex(keys).to_numpy(), index=df.index)
 
 
+def _dsum(d: pd.DataFrame, col: str, hl: float, cache: dict) -> np.ndarray:
+    """Decayed prior sum of a column (or of 1s when col is None), memoised in `cache`."""
+    key = (col, hl)
+    if key not in cache:
+        x = np.ones(len(d)) if col is None else d[col].to_numpy(float)
+        cache[key] = decayed_prior_sum(x, d["player_id"].to_numpy(), hl)
+    return cache[key]
+
+
+def component_arrays(d: pd.DataFrame, c: str, p: CompParams, cache: dict) -> tuple[np.ndarray, ...]:
+    """Volume, efficiency and shrinkage share for component c. `d` must already have components.
+
+    `cache` must only ever be used with this same `d` (keys are column names).
+    """
+    opp = COMPONENTS[c]
+    w = _dsum(d, None, p.hl_vol, cache)
+    s_vol = _dsum(d, opp, p.hl_vol, cache)
+    if p.m > 0:
+        w_long = _dsum(d, None, p.hl_long, cache)
+        long_run = _dsum(d, opp, p.hl_long, cache) / np.where(w_long > 0, w_long, 1)
+        s_vol, w = s_vol + p.m * long_run, w + p.m * (w_long > 0)
+    vol = np.where(w > 0, s_vol / np.where(w > 0, w, 1), np.nan)
+    s_opp, s_pts = _dsum(d, opp, p.hl_eff, cache), _dsum(d, f"pts_{c}", p.hl_eff, cache)
+    if ("mu", c) not in cache:
+        cache[("mu", c)] = league_rate(d, f"pts_{c}", opp).to_numpy()
+    mu = cache[("mu", c)]
+    if p.k > 0:
+        eff, shrink = (s_pts + p.k * mu) / (s_opp + p.k), p.k / (s_opp + p.k)
+    else:
+        eff, shrink = np.where(s_opp > 0, s_pts / np.where(s_opp > 0, s_opp, 1), mu), np.zeros(len(d))
+    return vol, eff, shrink
+
+
 def project(games: pd.DataFrame, params: dict = DEFAULT_PARAMS, sums_cache: dict | None = None) -> pd.DataFrame:
     """Add projection columns. `games` must be sorted by player_id, season, week.
 
     Adds per component c: vol_c, eff_c, shrink_c, proj_c; plus proj_other and proj (total).
-    sums_cache lets a parameter search reuse decayed sums for the same half-life.
+    sums_cache lets a parameter search reuse decayed sums (only with the same `games`).
     """
     d = add_components(games) if "pts_rec" not in games else games.copy()
-    g = d["player_id"].to_numpy()
     cache = {} if sums_cache is None else sums_cache
-
-    def dsum(col, hl):
-        key = (col, hl)
-        if key not in cache:
-            cache[key] = decayed_prior_sum(d[col].to_numpy(float), g, hl)
-        return cache[key]
-
-    ones = "_one"
-    d[ones] = 1.0
     total = np.zeros(len(d))
-    for c, opp in COMPONENTS.items():
-        p = params[c]
-        w = dsum(ones, p.hl_vol)
-        s_vol = dsum(opp, p.hl_vol)
-        if p.m > 0:
-            w_long = dsum(ones, p.hl_long)
-            long_run = dsum(opp, p.hl_long) / np.where(w_long > 0, w_long, 1)
-            s_vol, w = s_vol + p.m * long_run, w + p.m * (w_long > 0)
-        vol = np.where(w > 0, s_vol / np.where(w > 0, w, 1), np.nan)
-        s_opp, s_pts = dsum(opp, p.hl_eff), dsum(f"pts_{c}", p.hl_eff)
-        if ("mu", c) not in cache:
-            cache[("mu", c)] = league_rate(d, f"pts_{c}", opp).to_numpy()
-        mu = cache[("mu", c)]
-        eff = (s_pts + p.k * mu) / (s_opp + p.k) if p.k > 0 else np.where(s_opp > 0, s_pts / np.where(s_opp > 0, s_opp, 1), mu)
-        d[f"vol_{c}"], d[f"eff_{c}"] = vol, eff
-        d[f"shrink_{c}"] = p.k / (s_opp + p.k) if p.k > 0 else 0.0
-        d[f"proj_{c}"] = vol * eff
-        total = total + d[f"proj_{c}"].to_numpy()
-    w = dsum(ones, params["other_hl"])
-    d["proj_other"] = np.where(w > 0, dsum("pts_other", params["other_hl"]) / np.where(w > 0, w, 1), np.nan)
+    for c in COMPONENTS:
+        vol, eff, shrink = component_arrays(d, c, params[c], cache)
+        d[f"vol_{c}"], d[f"eff_{c}"], d[f"shrink_{c}"], d[f"proj_{c}"] = vol, eff, shrink, vol * eff
+        total = total + vol * eff
+    h = params["other_hl"]
+    w = _dsum(d, None, h, cache)
+    d["proj_other"] = np.where(w > 0, _dsum(d, "pts_other", h, cache) / np.where(w > 0, w, 1), np.nan)
     d["proj"] = total + d["proj_other"].to_numpy()
-    return d.drop(columns=ones)
+    return d

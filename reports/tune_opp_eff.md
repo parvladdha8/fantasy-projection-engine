@@ -1,39 +1,15 @@
 # Opportunity × efficiency tuning (dev 2019–2023)
 
-## rec: best hl_vol=4, hl_eff=6, k=25 (MSE 23.7963)
+## rec: hl_vol=4, hl_eff=12, k=50, hl_long=64, m=4 (MSE 40.4191)
 
-Top 5:
+MSE vs k at best half-lives: k=0: 40.9895, k=10: 40.5846, k=25: 40.4643, k=50: 40.4191, k=100: 40.4539, k=200: 40.5765, k=400: 40.7427, k=800: 40.8927
 
-- MSE 23.7963: hl_vol=4, hl_eff=6, k=25
-- MSE 23.8004: hl_vol=4, hl_eff=8, k=25
-- MSE 23.8124: hl_vol=4, hl_eff=8, k=50
-- MSE 23.8129: hl_vol=4, hl_eff=4, k=25
-- MSE 23.8138: hl_vol=4, hl_eff=6, k=50
+## rush: hl_vol=1, hl_eff=6, k=100, hl_long=16, m=2 (MSE 16.3217)
 
-MSE vs k (best half-lives): k=0: 24.1208, k=10: 23.8369, k=25: 23.7963, k=50: 23.8138, k=100: 23.8743, k=200: 23.9545, k=400: 24.0263, k=800: 24.0765
+MSE vs k at best half-lives: k=0: 16.7433, k=10: 16.5062, k=25: 16.3996, k=50: 16.3373, k=100: 16.3217, k=200: 16.3660, k=400: 16.4482, k=800: 16.5309
 
-## rush: best hl_vol=3, hl_eff=4, k=100 (MSE 7.0089)
+## pass: hl_vol=6, hl_eff=6, k=100, hl_long=16, m=2 (MSE 8.9528)
 
-Top 5:
+MSE vs k at best half-lives: k=0: 9.0677, k=10: 9.0277, k=25: 8.9960, k=50: 8.9686, k=100: 8.9528, k=200: 8.9751, k=400: 9.0565, k=800: 9.1801
 
-- MSE 7.0089: hl_vol=3, hl_eff=4, k=100
-- MSE 7.0094: hl_vol=3, hl_eff=6, k=100
-- MSE 7.0112: hl_vol=3, hl_eff=3, k=100
-- MSE 7.0119: hl_vol=3, hl_eff=8, k=100
-- MSE 7.0129: hl_vol=3, hl_eff=4, k=50
-
-MSE vs k (best half-lives): k=0: 7.2605, k=10: 7.0953, k=25: 7.0399, k=50: 7.0129, k=100: 7.0089, k=200: 7.0260, k=400: 7.0517, k=800: 7.0742
-
-## pass: best hl_vol=3, hl_eff=6, k=50 (MSE 4.8939)
-
-Top 5:
-
-- MSE 4.8939: hl_vol=3, hl_eff=6, k=50
-- MSE 4.8959: hl_vol=3, hl_eff=6, k=25
-- MSE 4.8989: hl_vol=3, hl_eff=4, k=50
-- MSE 4.8995: hl_vol=3, hl_eff=8, k=50
-- MSE 4.9005: hl_vol=3, hl_eff=8, k=25
-
-MSE vs k (best half-lives): k=0: 4.9437, k=10: 4.9092, k=25: 4.8959, k=50: 4.8939, k=100: 4.9089, k=200: 4.9501, k=400: 5.0178, k=800: 5.0960
-
-## other: best hl=128 (hl8: 0.2380, hl16: 0.2357, hl32: 0.2350, hl64: 0.2348, hl128: 0.2348)
+## other: hl=128

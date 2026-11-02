@@ -41,3 +41,20 @@ def paired_bootstrap(err_a, err_b, clusters, n_boot: int = 2000, seed: int = 0) 
         "ci_high": float(np.percentile(boot, 97.5)),
         "p_a_not_better": float((boot >= 0).mean()),
     }
+
+
+def coverage(y, lo, hi) -> dict:
+    """Share of outcomes inside [lo, hi], and below / above it."""
+    y, lo, hi = np.asarray(y, float), np.asarray(lo, float), np.asarray(hi, float)
+    below, above = (y < lo).mean(), (y > hi).mean()
+    return {"inside": 1 - below - above, "below": below, "above": above}
+
+
+def interval_score(y, lo, hi, alpha: float = 0.2) -> np.ndarray:
+    """Gneiting–Raftery interval score per observation (lower = better) for a (1−alpha) central interval.
+
+    width + (2/alpha)·shortfall below lo + (2/alpha)·excess above hi. A proper scoring rule:
+    in expectation it is minimised by reporting the true alpha/2 and 1−alpha/2 quantiles.
+    """
+    y, lo, hi = np.asarray(y, float), np.asarray(lo, float), np.asarray(hi, float)
+    return (hi - lo) + (2 / alpha) * np.maximum(lo - y, 0) + (2 / alpha) * np.maximum(y - hi, 0)

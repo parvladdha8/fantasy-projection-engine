@@ -268,3 +268,23 @@ Format: date, decision, and the reason. Parv's economic reasoning goes here so e
 **Result (Big-60):** v7m vs v8m is −0.002 [−0.012, +0.008], p = 0.35. v7m vs placebo is −0.005 (p = 0.19). Rule 1 fails, so the feature is rejected. It is not retried on dev seasons again.
 **The placebo now gives nothing** (+0.003 vs v8m, where v7's placebo gave −0.009). This confirms the earlier reading: v7's placebo "gain" was a crude downward recalibration, and the median map now does that job properly.
 **Conclusion for the paper:** Teammate absences shift shares in a real and stable way (λ_same ≈ 0.5), but the information is already in the model by kickoff. Short volume half-lives absorb multi-week absences, and betting lines price injury news. The loss mismatch was only part of the earlier failure. Injury data stays in the pipeline for live use and for the player's own status (a separate, later feature).
+
+### 2026-11-02: Floor / ceiling, simple version (v9): pre-registration (written before results)
+**Goal (CLAUDE.md model step 4):** Show a 10th / 50th / 90th percentile per player (floor / median / ceiling). About 80% of outcomes should land between floor and ceiling, and about 10% beyond each end.
+**Model (v9):** floor = b10_pos × proj_v5, ceiling = b90_pos × proj_v5 (the median is already v8m = b50_pos × proj_v5). It uses the same quantile regression through the origin (τ = 0.1, 0.9), walk-forward on fantasy-relevant player-games from seasons 2019..s−1. Each position gets one floor percentage and one ceiling percentage. Every player at a position gets the same *proportional* range. A player-specific spread is the next, separate feature.
+**Metrics:**
+  - **Coverage** = share of outcomes inside [floor, ceiling]; tails = share below the floor or above the ceiling.
+  - **Interval score** (Gneiting & Raftery, a proper scoring rule, lower is better): IS = (ceiling − floor) + (2/0.2)·(floor − y)·1[y < floor] + (2/0.2)·(y − ceiling)·1[y > ceiling]. It rewards narrow intervals and penalises misses, so you can't win by just widening.
+**Benchmark:** The same method applied to the baseline projection (floor/ceiling = position quantile ratios × baseline). This tests whether our better centre gives better ranges.
+**Pass criteria (Big-60 union, OOS 2020–23):**
+  1. Coverage within 77–83%, and each tail within 7–13%.
+  2. Interval score of v9 < benchmark, paired week-clustered bootstrap, p < 0.05.
+**Diagnostics (descriptive only, not pass/fail):** Coverage by position, and by the player's pre-game volatility tercile. Volatility = coefficient of variation of his previous 16 games, which uses past data only. If high-volatility players are under-covered and steady players over-covered, that motivates the per-player-spread feature.
+
+### 2026-11-02: Floor / ceiling (v9): result; ADOPTED for top players; fringe-player coverage problem
+**Criterion 1 (calibration, Big-60):** 80.8% inside, 9.6% below the floor, 9.5% above the ceiling. ✅ (Per position: QB 81.4, RB 79.4, WR 82.0, TE 80.7.)
+**Criterion 2 (accuracy):** Interval score 28.515 vs 28.946 for the benchmark, −0.431 [−0.659, −0.211], p < 0.001. ✅ The better centre makes the ranges better too. The benchmark is about equally well calibrated (81.0%), so the gain comes from being centred more accurately, not from having the right width.
+**Fitted percentages (stable across folds):** floor / median / ceiling as % of the mean projection: QB 48–51 / 101–104 / 159–165; RB 30–35 / 85–87 / 167–172; WR 31–32 / 92–96 / 182–188; TE 25–26 / 91–92 / 180–203. TEs have the widest relative range (touchdown-dependent), QBs the narrowest.
+**Honest scale:** For a typical Big-60 player the median is 14.1, the floor 5.2 and the ceiling 26.7. A width of about 21 points is the true week-to-week uncertainty.
+**Diagnostic, volatility terciles (descriptive):** steady 81.4%, middle 83.4%, volatile 78.2%, no history 74.7%. The pattern is mild: volatile players are slightly under-covered. This is modest evidence for the per-player spread feature, which is now justified but should be expected to give only a small gain.
+**Problem (not a pass criterion, but it blocks website use):** On **all players**, coverage is only 51.4%, with 32.0% below the floor. Fringe and backup players often score near 0 (zero-snap and garbage-time weeks), so a floor at 30% of the projection is far too high for them. The percentages were fitted on fantasy-relevant players only. **Status:** v9 is adopted for the Big-60 / top players. The website must not show v9 floors for fringe players until this is fixed. The fix (e.g. letting the floor and ceiling depend on projection level or role) should be designed together with the per-player-spread feature and pre-registered.

@@ -36,5 +36,10 @@
     "eff_adj": "lines"
   },
   "other_hl": 128,
-  "final_calibration": "lad_mult"
+  "final_calibration": "lad_mult",
+  "intervals": {
+    "floor_tau": 0.1,
+    "ceiling_tau": 0.9,
+    "method": "lad_mult"
+  }
 }

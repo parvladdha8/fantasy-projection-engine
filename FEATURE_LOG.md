@@ -55,6 +55,9 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-02 | v8m (current) vs baseline | Big-60 / all | 6.678 / 4.348 | 6.430 / 4.212 | −0.249 / −0.136 | [−0.326, −0.172] | ✅ **Current model** |
 | 2026-11-02 | Vacated opportunity re-tested on top of v8m (v7m; final, pre-specified) | **Big-60 vs v8m** | 6.430 | 6.428 | **−0.002** | [−0.012, +0.008] | ❌ **Rejected (final)** |
 | 2026-11-02 | v7m placebo | Big-60 vs v8m | 6.430 | 6.433 | +0.003 | [−0.003, +0.009] | ✅ Placebo gain gone once calibration is in the model |
+| 2026-11-02 | **Floor/ceiling v9** (10th/90th pct = position % of mean projection) | Big-60 coverage | target 80% | 80.8% (9.6% / 9.5% tails) | — | — | ✅ **Calibrated** |
+| 2026-11-02 | Floor/ceiling v9 | Big-60 interval score vs baseline-centred benchmark | 28.946 | 28.515 | −0.431 | [−0.659, −0.211] | ✅ **Adopted** |
+| 2026-11-02 | Floor/ceiling v9 | All-players coverage | target 80% | 51.4% (32.0% below floor) | — | — | ⚠️ Badly miscalibrated for fringe players |
 
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 

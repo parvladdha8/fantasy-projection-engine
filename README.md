@@ -15,6 +15,7 @@ Weekly full-PPR fantasy football projections that try to beat a simple average b
 | `  player_games.py` | Adds games where a player was on the field but recorded no stats (0 points), using snap counts. |
 | `  baseline.py` | The naive baseline: weighted average of a player's past games. |
 | `  team_context.py` | Team totals per game (targets, carries, attempts) for share × team-volume modeling. |
+| `  betting.py` | Betting lines → each team's implied points and spread; team-volume regression. |
 | `  opp_eff.py` | Opportunity × efficiency model: volume × points-per-touch, with shrinkage. |
 | `  tuning.py` | Picks model settings using only the seasons it's given. |
 | `  metrics.py` | Error measures (MAE, RMSE) and the paired significance test. |
@@ -38,5 +39,6 @@ uv run pytest                                   # run the tests
 Phase 1 (Foundation) complete. Phase 2 in progress.
 - Step 1 done: snap-count zero games (a significant improvement; see `FEATURE_LOG.md`).
 - Step 2: opportunity × efficiency model (`opp_eff.py`) with shrinkage on both volume and efficiency, tuned on fantasy-relevant players. **It beats the baseline on the Big-60 by about 0.06 pts MAE (p ≈ 0.003), out-of-sample 2020–2023.** Paper table: `paper/results_shrinkage_ablation.md`.
-- Step 3: team context (share × team volume) tested and **rejected for now** (no Big-60 gain); code kept for betting-line and injury features.
+- Step 3: team context (share × team volume) on its own: no Big-60 gain.
+- Step 4: **betting lines** feed team volume. **Current model (v4) beats the baseline on the Big-60 by 0.119 pts MAE (p < 0.001), out-of-sample 2020–2023.** The lines' own contribution is −0.045 (p < 0.001), confirmed by a placebo test. Paper: `paper/results_betting_lines.md`.
 - Baseline MAE on development seasons 2019–2023, Big-60-style pool, complete data: **6.76 points per player**. That's the number to beat.

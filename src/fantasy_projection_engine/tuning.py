@@ -32,13 +32,15 @@ def relevant_mask(g: pd.DataFrame) -> np.ndarray:
 
 def tune_opp_eff(g: pd.DataFrame, seasons: list[int], cache: dict | None = None,
                  vol_shrink=VOL_SHRINK_V1, row_mask: np.ndarray | None = None,
-                 k_grid: list[float] = K, team: bool = False) -> tuple[dict, dict]:
+                 k_grid: list[float] = K, team: bool = False, lines: bool = False,
+                 team_reg: bool = False) -> tuple[dict, dict]:
     """Per component, pick (hl_vol, hl_eff, k, hl_long, m) minimising that component's MSE on `seasons`.
 
     row_mask: optionally restrict the tuning loss to these rows (e.g. relevant_mask(g)).
     k_grid: efficiency-shrinkage values to search ([0] = no efficiency shrinkage).
     team: if True, volume = share × expected team volume (v3), searching HL_TEAM.
           grid_results rows then also carry hl_team at the end.
+    lines: if True (with team=True), team volume also uses betting lines (v4).
 
     Returns (params, grid_results) where grid_results[c] = sorted list of (mse, hl_vol, hl_eff, k, hl_long, m).
     `g` must already have components (opp_eff.add_components).
@@ -52,14 +54,14 @@ def tune_opp_eff(g: pd.DataFrame, seasons: list[int], cache: dict | None = None,
     for c in COMPONENTS:
         res = []
         for hv, he, k, (hl, vm), ht in itertools.product(HL_VOL, HL_EFF, k_grid, vol_shrink, HL_TEAM if team else [8]):
-            vol, eff, _ = component_arrays(g, c, CompParams(hv, he, k, hl, vm, team, ht), cache)
+            vol, eff, _ = component_arrays(g, c, CompParams(hv, he, k, hl, vm, team, ht, lines, team_reg), cache)
             pred = vol * eff
             m = rows & ~np.isnan(pred)
             res.append((float(np.mean((actual[c][m] - pred[m]) ** 2)), hv, he, k, hl, vm, ht))
         res.sort()
         grid[c] = res
         best = res[0]
-        params[c] = CompParams(*best[1:6], team=team, hl_team=best[6])
+        params[c] = CompParams(*best[1:6], team=team, hl_team=best[6], lines=lines, team_reg=team_reg)
     oth = []
     for h in HL_OTHER:
         p = project(g, {**DEFAULT_PARAMS, "other_hl": h}, cache)

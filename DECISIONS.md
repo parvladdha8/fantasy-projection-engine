@@ -120,3 +120,25 @@ Format: date, decision, and the reason. Parv's economic reasoning goes here so e
 **Why (interpretation):** A team's *historical* average volume adds almost nothing beyond a player's own volume history, which already reflects his team's volume. Team pass volume is also noisy and mean-reverting week to week (it depends on game script). The value of the share × team structure should come from **forward-looking** team volume: betting lines (implied points and spread → expected plays and pass rate) and teammate injuries (vacated share). Neither is in yet.
 **Decision:** Keep v2 as the current model. Keep the team-context code as the base for betting-market and injury features, and re-test v3 when those arrive.
 **Expectation was stated in advance:** Before running, we expected little gain on its own.
+
+### 2026-11-01: Betting lines (v4): pre-registration (written before results)
+**Source:** nflverse schedules `spread_line` (closing spread; + = home favoured) and `total_line` (closing over/under). Complete for all 2,127 regular-season games 2018–2025. Sanity checks: mean (actual margin − spread) = −0.07 and mean (actual total − line) = +0.57, so the lines are unbiased.
+**Transformation:** implied team points = (total + own margin) / 2. Expected margin = +spread (home) / −spread (away).
+**Look-ahead:** These are closing lines, known at kickoff. Our projections freeze at kickoff, so this is legitimate for backtests. **Live use** needs a pre-kickoff odds snapshot from a verified free/low-cost source (CLAUDE.md), to be chosen in Phase 3. Backtest results with closing lines may be slightly optimistic compared with lines captured hours before kickoff.
+**Pre-check (dev only; fit 2019–21, scored 2022–23):** Lines raise the explained variance of team weekly volume from 9.1% → 11.2% (targets), 5.3% → 6.7% (carries) and 8.7% → 10.2% (attempts). The signs match football logic: favourites run more and pass less, and high totals produce more passes. About 90% of weekly team volume is unpredictable before kickoff.
+**Model (v4):** Team context (v3) with team volume = OLS(history, implied points, margin), where the coefficients for season s are fitted on team-games from seasons < s only.
+**Test plan:** Same framework as the paper ablation (relevant-player tuning, forward-chained OOS 2020–23, Big-60 union pool, paired week-clustered bootstrap). **Headline: v4 vs v2.** Secondary: v4 vs v3, v4 vs baseline. Using lines for efficiency (TD environment) is a **separate** later experiment, so only one feature is tested at a time.
+
+### 2026-11-01: Betting lines: placebo reveals a confound; pre-registration of the clean ablation
+**Real-lines result (OOS 2020–23, Big-60):** v4 vs v2 −0.066 [−0.101, −0.032]. v4 vs v3 −0.073. v4 vs baseline −0.117. Bias +0.32.
+**Placebo (lines shuffled within season):** v4 vs v2 −0.017 (n.s.), but v4 vs v3 is still **−0.024 (p = 0.001)**, and bias +0.33.
+**Interpretation:** This is not leakage: shuffled lines don't produce the big gain. But v4 bundled two changes: (1) a team-volume **regression** whose history coefficient (about 0.6) shrinks team volume toward the league average (team-level regression to the mean), and (2) the **information in the lines**. The placebo isolates (1).
+**Pre-registered clean ablation (written before running):** Add v4-reg = the same walk-forward regression with history only (no lines). Compare, in one run with the same framework: **v4 vs v4-reg = value of betting lines** (headline), and v4-reg vs v2 = value of team-volume shrinkage. The placebo run stays logged.
+
+### 2026-11-01: Betting lines: clean ablation result; v4 becomes the current model
+**Result (OOS 2020–23, Big-60):** The betting-market information (v4 vs v4-reg) is −0.045 [−0.060, −0.031], p < 0.001. This was the pre-registered headline, and it passes. Team-volume shrinkage alone (v4-reg vs v2) is −0.022 (p = 0.07; significant on all players). Total v4 vs v2 is −0.068, and **v4 vs baseline is −0.119** (6.659 → 6.540).
+**Mechanism:** The regression removes bias (Big-60 over-projection +0.47 → +0.33). The lines don't change bias (+0.33 with and without). Instead they improve *discrimination*: the market knows which teams will have high volume in that particular game.
+**Decision:** **v4 is the current model.** v4-reg's team-volume shrinkage is kept inside v4, even though it isn't individually significant on the Big-60, because (a) the lines regression requires that structure, (b) it's significant on all players, and (c) it's the same empirical-Bayes logic used everywhere else.
+**Final settings (all dev 2019–2023):** receiving 4/32/100/64/4 with team half-life 8; rushing 1/6/50/16/2, team 4; passing 3/8/200/64/2, team 16 (format: hl_vol/hl_eff/k/hl_long/m). Saved in `reports/opp_eff_params.json`.
+**Paper:** `paper/results_betting_lines.md` (ablation, placebo, coefficients).
+**Live-use requirement (Phase 3):** Pick and verify a pre-kickoff odds source (free/low-cost, terms of service respected) and snapshot lines with timestamps. Until then, the backtest uses nflverse closing lines.

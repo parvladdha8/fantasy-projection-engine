@@ -27,6 +27,12 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-01 | Team context v3: volume = shrunk share × team's historical average volume | **Big-60 vs v2** | 6.621 | 6.629 | +0.009 | [−0.019, +0.035] | ❌ **Rejected for now** (no Big-60 gain) |
 | 2026-11-01 | Team context v3 | All players vs v2 | 4.360 | 4.352 | −0.009 | [−0.016, −0.002] | ➖ Small gain on fringe players; not our target |
 
+| 2026-11-01 | Betting lines v4 (team volume = OLS on history + implied pts + margin), first run | Big-60 vs v2 | 6.622 | 6.557 | −0.066 | [−0.101, −0.032] | ⚠️ Bundled two changes (see placebo) |
+| 2026-11-01 | **Placebo**: v4 with lines shuffled within season | Big-60 vs v2 | 6.609 | 6.592 | −0.017 | [−0.049, +0.014] | ✅ No leakage; revealed the regression confound |
+| 2026-11-01 | Team-volume regression on history only (v4-reg) | Big-60 vs v2 | 6.607 | 6.585 | −0.022 | [−0.052, +0.006] | ⚠️ p = 0.07 on Big-60; significant on all players (−0.019) |
+| 2026-11-01 | **Betting-market information** (v4 vs v4-reg) | **Big-60** | 6.585 | 6.540 | **−0.045** | [−0.060, −0.031] | ✅ **Kept** |
+| 2026-11-01 | v4 (current) vs baseline | Big-60 | 6.659 | 6.540 | −0.119 | [−0.163, −0.077] | ✅ Current model |
+
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 
 **Note on OE v2:** Widening the search grid made Big-60 results *worse*. The tuner chose more extreme settings (1-game recent memory) that reduce error across all players but not for starters. This shows the tuning objective is mismatched with the evaluation target. Both runs are logged so there's no cherry-picking of the better one.

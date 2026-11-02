@@ -26,6 +26,9 @@ Team context (v3, CompParams.team=True): volume = share × expected team volume
   team_proj  = the team's decayed average total over its previous games (half-life hl_team).
                Uses the player's CURRENT team, so a traded player gets his new team's volume.
 
+Betting lines (v4, CompParams.lines=True, requires team=True): team_proj comes from
+  betting.predict_team_volume (history + implied points + spread, fitted on earlier seasons).
+
 Efficiency: empirical-Bayes shrinkage toward the position's league-wide rate:
 
     eff = (S_pts + k · μ_pos) / (S_opp + k)
@@ -62,6 +65,8 @@ class CompParams:
     m: float = 0         # volume shrinkage strength (pseudo-games); 0 = v1
     team: bool = False   # v3: volume = share × expected team volume
     hl_team: float = 8   # half-life (team games) for expected team volume
+    lines: bool = False  # v4: team volume also uses betting lines (needs team=True)
+    team_reg: bool = False  # v4-reg control: walk-forward regression on team history only (no lines)
 
 
 DEFAULT_PARAMS = {
@@ -120,16 +125,27 @@ def _dsum(d: pd.DataFrame, col: str, hl: float, cache: dict) -> np.ndarray:
     return cache[key]
 
 
-def team_projection(d: pd.DataFrame, team_col: str, hl: float, cache: dict) -> np.ndarray:
-    """For each player-game: his team's decayed average `team_col` over the TEAM's earlier games."""
-    key = ("team_proj", team_col, hl)
+def team_projection(d: pd.DataFrame, team_col: str, hl: float, cache: dict, lines: bool = False,
+                    reg: bool = False) -> np.ndarray:
+    """For each player-game: his team's expected `team_col`.
+
+    default:   the team's decayed average over its earlier games.
+    reg=True:  walk-forward regression on that history only (shrinks toward league average).
+    lines=True: history + betting lines regression (betting.predict_team_volume).
+    """
+    key = ("team_proj", team_col, hl, lines, reg)
     if key not in cache:
-        tg = d[["team", "season", "week", "game_id", team_col]].drop_duplicates(["team", "game_id"])
+        extra = ["implied", "margin"] if lines else []
+        tg = d[["team", "season", "week", "game_id", team_col, *extra]].drop_duplicates(["team", "game_id"])
         tg = tg.sort_values(["team", "season", "week"]).reset_index(drop=True)
-        teams = tg["team"].to_numpy()
-        s = decayed_prior_sum(tg[team_col].to_numpy(float), teams, hl)
-        w = decayed_prior_sum(np.ones(len(tg)), teams, hl)
-        tg["_proj"] = np.where(w > 0, s / np.where(w > 0, w, 1), np.nan)
+        if lines or reg:
+            from .betting import predict_team_volume  # local import avoids a circular import
+            tg["_proj"] = predict_team_volume(tg, team_col, hl, use_lines=lines)
+        else:
+            teams = tg["team"].to_numpy()
+            s = decayed_prior_sum(tg[team_col].to_numpy(float), teams, hl)
+            w = decayed_prior_sum(np.ones(len(tg)), teams, hl)
+            tg["_proj"] = np.where(w > 0, s / np.where(w > 0, w, 1), np.nan)
         merged = d[["team", "game_id"]].merge(tg[["team", "game_id", "_proj"]], on=["team", "game_id"], how="left")
         cache[key] = merged["_proj"].to_numpy()
     return cache[key]
@@ -156,7 +172,7 @@ def component_arrays(d: pd.DataFrame, c: str, p: CompParams, cache: dict) -> tup
     """
     opp = COMPONENTS[c]
     if p.team:
-        vol = _share(d, opp, p, cache) * team_projection(d, TEAM_COLS[opp], p.hl_team, cache)
+        vol = _share(d, opp, p, cache) * team_projection(d, TEAM_COLS[opp], p.hl_team, cache, p.lines, p.team_reg)
         return (vol, *_efficiency(d, c, p, cache))
     w = _dsum(d, None, p.hl_vol, cache)
     s_vol = _dsum(d, opp, p.hl_vol, cache)

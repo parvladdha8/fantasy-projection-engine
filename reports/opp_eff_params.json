@@ -1,24 +1,36 @@
 {
   "rec": {
     "hl_vol": 4,
-    "hl_eff": 12,
-    "k": 50,
+    "hl_eff": 32,
+    "k": 100,
     "hl_long": 64,
-    "m": 4
+    "m": 4,
+    "team": true,
+    "hl_team": 8,
+    "lines": true,
+    "team_reg": false
   },
   "rush": {
     "hl_vol": 1,
     "hl_eff": 6,
-    "k": 100,
+    "k": 50,
     "hl_long": 16,
-    "m": 2
+    "m": 2,
+    "team": true,
+    "hl_team": 4,
+    "lines": true,
+    "team_reg": false
   },
   "pass": {
-    "hl_vol": 6,
-    "hl_eff": 6,
-    "k": 100,
-    "hl_long": 16,
-    "m": 2
+    "hl_vol": 3,
+    "hl_eff": 8,
+    "k": 200,
+    "hl_long": 64,
+    "m": 2,
+    "team": true,
+    "hl_team": 16,
+    "lines": true,
+    "team_reg": false
   },
   "other_hl": 128
 }

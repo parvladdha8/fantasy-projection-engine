@@ -191,14 +191,35 @@ def prime_time_flags(schedules: pd.DataFrame) -> pd.DataFrame:
     return s[["game_id", "prime_time", "slot"]]
 
 
-def placebo_flags(games: pd.DataFrame, flag: np.ndarray, seed: int = 0) -> np.ndarray:
-    """Placebo: in each season-week, give the flag to the same NUMBER of games as truly had it, chosen at random."""
+def placebo_flags(games: pd.DataFrame, flag: np.ndarray, seed: int = 0, eligible: np.ndarray | None = None) -> np.ndarray:
+    """Placebo: in each season-week, give the flag to the same NUMBER of games as truly had it, chosen at random
+    (only among `eligible` games if given, e.g. outdoor games for the weather placebo)."""
     rng = np.random.default_rng(seed)
+    elig = np.ones(len(games), bool) if eligible is None else np.asarray(eligible, bool)
     gm = pd.DataFrame({"season": games["season"].to_numpy(), "week": games["week"].to_numpy(),
-                       "game_id": games["game_id"].to_numpy(), "flag": np.asarray(flag, bool)}).drop_duplicates("game_id")
+                       "game_id": games["game_id"].to_numpy(), "flag": np.asarray(flag, bool),
+                       "elig": elig}).drop_duplicates("game_id")
     fake = set()
     for _, w in gm.groupby(["season", "week"]):
         k = int(w["flag"].sum())
         if k:
-            fake.update(rng.choice(w["game_id"].to_numpy(), k, replace=False))
+            fake.update(rng.choice(w.loc[w["elig"], "game_id"].to_numpy(), k, replace=False))
     return games["game_id"].isin(fake).to_numpy()
+
+
+WIND_MPH, COLD_F = 15, 32  # fixed in advance (DECISIONS.md, 2026-11-02)
+OUTDOOR_ROOFS = ("outdoors", "open")
+
+
+def weather_flags(schedules: pd.DataFrame) -> pd.DataFrame:
+    """game_id → outdoor, weather_known, bad_weather (outdoor/open AND (wind ≥ 15 mph OR temp ≤ 32°F)), cause.
+    Missing temp/wind in an outdoor game counts as NOT bad weather (pre-registered rule)."""
+    s = schedules.loc[schedules["game_type"] == "REG", ["game_id", "roof", "temp", "wind"]].copy()
+    s["outdoor"] = s["roof"].isin(OUTDOOR_ROOFS)
+    s["weather_known"] = s["temp"].notna() & s["wind"].notna()
+    windy = s["outdoor"] & (s["wind"] >= WIND_MPH)
+    cold = s["outdoor"] & (s["temp"] <= COLD_F)
+    s["bad_weather"] = windy | cold
+    s["cause"] = np.select([windy & cold, windy, cold], ["wind + cold", "wind only", "cold only"],
+                           np.where(s["outdoor"], "outdoor, fine", "dome/closed"))
+    return s[["game_id", "outdoor", "weather_known", "bad_weather", "cause", "temp", "wind"]]

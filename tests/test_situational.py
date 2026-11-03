@@ -142,3 +142,27 @@ def test_situation_fit_ignores_uncalibrated_first_season_by_default():
     b = situation_multiplier(d, "med", mask, flag, n_boot=50)[0]
     np.testing.assert_allclose(a, b)
     assert (a[d.season <= 2020] == 1).all()  # 2020 has no calibrated season before it
+
+
+def test_weather_flags():
+    from fantasy_projection_engine.situational import weather_flags
+    sch = pd.DataFrame({"game_id": list("abcdefg"), "game_type": ["REG"] * 6 + ["POST"],
+                        "roof": ["outdoors", "open", "dome", "outdoors", "outdoors", "closed", "outdoors"],
+                        "temp": [50, 30, 10, np.nan, 60, 20, 10], "wind": [15, 3, 30, np.nan, 14, 25, 30]})
+    f = weather_flags(sch).set_index("game_id")
+    assert "g" not in f.index                                   # regular season only
+    assert f["bad_weather"].tolist() == [True, True, False, False, False, False]  # threshold inclusive; domes never
+    assert f.loc["d", "outdoor"] and not f.loc["d", "weather_known"]               # missing → not flagged
+    assert f.loc["a", "cause"] == "wind only" and f.loc["b", "cause"] == "cold only"
+    assert f.loc["c", "cause"] == "dome/closed" and f.loc["e", "cause"] == "outdoor, fine"
+
+
+def test_placebo_respects_eligible_games():
+    from fantasy_projection_engine.situational import placebo_flags
+    g = pd.DataFrame({"season": 2021, "week": np.repeat([1, 2], 10), "game_id": [f"g{i}" for i in range(20)]})
+    flag = g["game_id"].isin(["g0", "g1", "g12"]).to_numpy()
+    elig = (np.arange(20) % 2 == 0)
+    for seed in range(20):
+        fake = placebo_flags(g, flag, seed=seed, eligible=elig)
+        assert fake[:10].sum() == 2 and fake[10:].sum() == 1   # same count per week
+        assert not (fake & ~elig).any()                        # only eligible games

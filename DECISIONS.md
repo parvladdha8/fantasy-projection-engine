@@ -426,3 +426,44 @@ The steps add up exactly to the median (checked to 1e-15).
   - **The shrinkage is doing exactly its job:** with 1–3 calibrated openers to learn from, the data cannot tell a Week 1 effect apart from noise.
 **Reconciling with the diagnostic:** OOS, only 42% of top players beat their median in Week 1 (vs 51% in other weeks), and TEs 34%. That is a descriptive pattern on 283 player-games. It could be real (stale offseason information) or partly chance. Our estimator, which must learn it from *earlier* openers only, could not exploit it reliably. That is the honest summary: **possible signal, not usable with four seasons of openers.**
 **Verdict:** The Week 1 idea is **closed on development data**, as pre-registered. Re-testing is allowed only on future live seasons (2026+), under a new pre-registration. The fixed estimator (`FIRST_CALIBRATED_SEASON = 2020`) is now the default for all future situation tests (weather next). The original first run's report regenerates identically (only its title was relabelled "first run").
+
+### 2026-11-02: Weather effect (v13): pre-registration (written before results)
+**Parv's decision:** Use the weather already in the nflverse schedules (option A). No new download. Switch to a full weather source (e.g. Open-Meteo, terms checked first) only if this finds a signal worth chasing, or when the live pipeline is built.
+**Data limits, disclosed in advance:**
+  - nflverse has temperature and wind only. **There is no rain/snow field**, so precipitation is not tested.
+  - The values are observed at kickoff, not forecasts. Live use will rely on forecasts a few hours out, so the backtest is slightly optimistic.
+  - Temperature/wind are missing for 91 of 187 outdoor games in 2022 and 41 of 191 in 2023 (very few in other seasons).
+**Definition (fixed in advance):** A game is **bad weather** if the roof is `outdoors` or `open` AND (wind ≥ **15 mph** OR temperature ≤ **32°F**). Domes and closed roofs are never flagged.
+  - **Missing-data rule:** an outdoor game with missing temperature/wind is treated as **not flagged**. Some real bad-weather games are therefore mislabelled as normal, which biases any effect toward zero. The number of such games is reported.
+  - In 2019–23, 134 of 933 outdoor games (14.4%) qualify.
+**Economic story:** Wind and cold make passing and kicking harder. But the betting total already reacts strongly to forecast wind, and our model uses that total for both volume and efficiency. So the question is whether players still miss their median in bad weather *after* the market's line. The plausible residual is a **reallocation**: teams run more and throw less, so pass catchers and QBs fall short (negative γ) while RBs hold up (γ ≈ 0 or positive). The position γ's are reported to check this story, descriptively.
+**Model v13 (position level):** For bad-weather rows, median × (1 + γ_pos). It uses exactly the prime-time machinery (`situation_multiplier`): LAD through the origin on earlier bad-weather, fantasy-relevant player-games, bootstrap se over games, EB shrinkage toward 0. Fitting uses the **fixed estimator** (seasons ≥ 2020 only).
+**No player-level version:** A typical player has only a handful of bad-weather games, and player-level splits failed in both Week 1 (v11p) and prime time (v12p). The "cold-weather QB" narrative is noted but not tested.
+**Placebos (two, both fixed seed):**
+  1. **Random games:** the bad-weather label goes to the same number of random games each week. This checks the procedure itself, as with prime time.
+  2. **Random outdoor games:** the label goes to the same number of random *outdoor/open* games each week. This separates weather from simply being outdoors. If v13 only beats placebo 1, the gain is an outdoor effect, not weather.
+**Test:** Re-tuned per fold as in every experiment.
+  - Pool: the Big-60 union, **restricted to bad-weather player-games**, paired bootstrap clustered by season-week.
+  - **Headline pool: OOS 2021–23.** With the fixed estimator, 2020 has no earlier calibrated season to learn from, so v13 = v8m there by construction. We decide this now, before results, instead of diluting the test as the Week 1 re-run had to (that re-run had to keep its original pool).
+  - **Adopt v13 only if p < 0.05 on the headline AND v13 beats both placebos** on each placebo's own labelled rows.
+  - Secondary: all players on bad-weather rows; full-season Big-60.
+**Diagnostics (descriptive):** v8m's share above the median and median error in bad weather vs other outdoor games vs domes, by position and by cause (wind only / cold only / both). Floor/ceiling coverage in bad weather.
+**Power:** About 14% of outdoor games, roughly 9% of all games, so expect a few hundred Big-60 rows in 2021–23. Only a sizeable effect (around 0.15+ points) is detectable.
+**Expectation:** Most likely a null for the same reason as prime time: the betting total already prices weather. The 2022–23 gaps also blur the label.
+
+### 2026-11-02: Weather effect: result; REJECTED
+**Headline (pre-registered): v13 vs v8m, Big-60 bad-weather player-games, OOS 2021–23 (n = 345):** +0.039 [−0.035, +0.118], p = 0.84. It is worse. **Rejected.** Secondary checks agree: all players on bad-weather rows −0.004 (p = 0.33); full-season Big-60 +0.004.
+**Placebos:**
+  - Random games: +0.070 (also worse). Unlike prime time, the placebo γ's are mostly ≈ 0, so the fixed estimator is behaving.
+  - Random outdoor games: shrunk to exactly zero in every fold (B = 1). There is no "outdoor" residual for the weather flag to borrow.
+**What the fit learned:** In 2022–23 the raw bad-weather γ's are negative for every position (WR −13 to −15%, QB −4 to −11%, RB −7 to −8%). After shrinkage (B ≈ 0.35–0.7), WR is about −9%. Out of sample, that cut hurt QBs and WRs more than it helped.
+  - The reallocation story (RBs hold up while passers suffer) is **not** supported: RBs also come in negative.
+  - In the 2021 fold, with one season to learn from, everything was shrunk to 0.
+**Diagnostic (descriptive):** In bad weather, 45.1% of top players beat their median, vs 48.9% in fine outdoor games. The gap is small (4 points on 494 rows), and the walk-forward estimator could not turn it into lower error. Floor/ceiling coverage is 81.8%, fine.
+**Limits that weaken the test, all disclosed in advance:**
+  - There is no precipitation field.
+  - 132 outdoor games in 2022–23 are missing weather and count as normal.
+  - The values are observed at kickoff, not forecasts.
+  - A better data source could change the answer. That is a reason to re-test weather only once the live pipeline has forecast data, under a new pre-registration, never on 2024/2025.
+**Logged as a failed feature** (rigor rule 3).
+**Unplanned observation (NOT tested, NOT a finding):** In dome/closed-roof games, 55.1% of top players beat their median (median error −0.89), vs 48.9% in fine outdoor games. This was noticed in the diagnostics, *after* looking at the data, so it is a hypothesis only. If it is tested, it needs its own pre-registration, placebo and the same adoption rule, and the write-up must say how the idea arose (forking-paths risk).

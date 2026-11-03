@@ -135,14 +135,20 @@ def fit_week1_players(u: np.ndarray, player: np.ndarray, pos: np.ndarray) -> pd.
     return res
 
 
+# First season whose v8m median was itself calibrated (the calibration needs one earlier season).
+# Situation effects fitted on the median must start here; 2019 "medians" are uncalibrated means
+# (bug found 2026-11-02, see DECISIONS.md). The original v11/v12 runs pass first_season=2019 explicitly.
+FIRST_CALIBRATED_SEASON = 2020
+
+
 def week1_multiplier(df: pd.DataFrame, med_col: str, fit_mask: np.ndarray, player_level: bool = False,
-                     first_season: int = 2019, n_boot: int = 200) -> tuple[np.ndarray, pd.DataFrame, pd.DataFrame]:
+                     first_season: int = FIRST_CALIBRATED_SEASON, n_boot: int = 200) -> tuple[np.ndarray, pd.DataFrame, pd.DataFrame]:
     """Walk-forward Week 1 multiplier (1 for other weeks / no earlier data). Returns (mult, position table, player table)."""
     return situation_multiplier(df, med_col, fit_mask, df["week"].to_numpy() == 1, player_level, first_season, n_boot)
 
 
 def situation_multiplier(df: pd.DataFrame, med_col: str, fit_mask: np.ndarray, flag: np.ndarray,
-                         player_level: bool = False, first_season: int = 2019,
+                         player_level: bool = False, first_season: int = FIRST_CALIBRATED_SEASON,
                          n_boot: int = 200) -> tuple[np.ndarray, pd.DataFrame, pd.DataFrame]:
     """Same estimator for any pre-game situation flag (Week 1, prime time, ...): rows with flag get
     median × (1 + γ_pos [+ player deviation]); other rows get 1."""

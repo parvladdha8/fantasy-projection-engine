@@ -5,8 +5,13 @@ Pre-registered (DECISIONS.md, 2026-11-02):
   v11p  v11 + player-specific deviation, partially pooled toward the position effect
   Headline: v11 vs v8m, Big-60 union, Week 1 only, paired bootstrap clustered by GAME. Adopt if p < 0.05.
 
-Usage: uv run python scripts/exp_week1.py
+Bug-fix re-run (--fixed, pre-registered 2026-11-02): fit situation effects on seasons ≥ 2020 only
+(2019 medians are uncalibrated). Everything else identical. Writes reports/exp_week1_fixed.md.
+
+Usage: uv run python scripts/exp_week1.py [--fixed]
 """
+
+import sys
 
 import numpy as np
 import pandas as pd
@@ -26,6 +31,8 @@ from exp_eff_lines import with_eff_adj
 MODELS = ["base", "v8m", "v11", "v11p"]
 COMPARE = [("v11", "v8m"), ("v11p", "v11"), ("v11p", "v8m"), ("v11", "base")]
 POS = ["QB", "RB", "WR", "TE"]
+FIXED = "--fixed" in sys.argv
+FIRST = 2020 if FIXED else 2019  # first season situation effects are fitted on
 
 
 def main():
@@ -40,13 +47,14 @@ def main():
         v4, _ = tune_opp_eff(g, train, cache, VOL_SHRINK_V2, rel, team=True, lines=True)
         fold["raw"] = project(g, with_eff_adj(v4, "lines"), cache)["proj"].to_numpy()
         fold["proj_v8m"] = median_calibration(fold, "raw", rel, "lad_mult")[0]
-        m11, pt, _ = week1_multiplier(fold, "proj_v8m", rel)
-        m11p, _, pl = week1_multiplier(fold, "proj_v8m", rel, player_level=True)
+        m11, pt, _ = week1_multiplier(fold, "proj_v8m", rel, first_season=FIRST)
+        m11p, _, pl = week1_multiplier(fold, "proj_v8m", rel, player_level=True, first_season=FIRST)
         fold["proj_v11"], fold["proj_v11p"] = fold["proj_v8m"] * m11, fold["proj_v8m"] * m11p
         for k, tau in [("lo", 0.1), ("hi", 0.9)]:
             fold[k] = quantile_band(fold, "raw", "z", every, tau)[0]
         fold["lo"], fold["hi"] = np.fmin(fold["lo"], fold["proj_v8m"]), np.fmax(fold["hi"], fold["proj_v8m"])
-        ptabs.append(pt[pt.season == s])
+        if not pt.empty:
+            ptabs.append(pt[pt.season == s])
         if not pl.empty:
             pltabs.append(pl[pl.season == s])
         folds.append(fold[fold["season"] == s])
@@ -61,8 +69,9 @@ def main():
     pt = pd.concat(ptabs, ignore_index=True)
     pl = pd.concat(pltabs, ignore_index=True) if pltabs else pd.DataFrame()
 
-    L = ["# Experiment: Week 1 effect on the median (v11 / v11p), forward-chained OOS 2020–2023", "",
-         "## Position-level Week 1 effect (fitted on Week 1s of seasons 2019..s−1; γ = % vs the v8m median)", "",
+    title = "BUG-FIX RE-RUN (fitted on seasons ≥ 2020)" if FIXED else "first run (fitted on seasons ≥ 2019)"
+    L = [f"# Experiment: Week 1 effect on the median (v11 / v11p), {title}, forward-chained OOS 2020–2023", "",
+         f"## Position-level Week 1 effect (fitted on Week 1s of seasons {FIRST}..s−1; γ = % vs the v8m median)", "",
          "| season | position | n | raw γ | se | τ² | shrinkage B | shrunk γ |", "|---|---|---|---|---|---|---|---|"]
     L += [f"| {r.season} | {r.position} | {r.n} | {100 * r.raw:+.1f}% | {100 * r.se:.1f}% | {r.tau2:.4f} | {r.B:.2f} | {100 * r.gamma:+.1f}% |"
           for r in pt.sort_values(["season", "position"]).itertuples()]
@@ -74,7 +83,10 @@ def main():
         L.append(f"| {s} | {p} | {len(a)} | {(a.n >= 2).sum()} | {a.B.mean():.2f} | {100 * a.dev.abs().max():.1f}% |")
     L += ["", "## Results, Week 1 only (Big-60 = union of all four models' pools; clusters = games)", "",
           "| pool | A vs B | n | MAE A | MAE B | diff (A−B) | 95% CI | p(A not better) |", "|---|---|---|---|---|---|---|---|"]
-    for name, d in {"big60 week 1": big, "all players week 1": w1}.items():
+    pools = {"big60 week 1": big, "all players week 1": w1}
+    if FIXED:
+        pools["big60 week 1, 2021–23 only (descriptive)"] = big[big.season >= 2021]
+    for name, d in pools.items():
         for a, b in COMPARE:
             r = paired_bootstrap((d["actual"] - d[f"proj_{a}"]).abs(), (d["actual"] - d[f"proj_{b}"]).abs(), d["game_id"])
             L.append(f"| {name} | {a} vs {b} | {len(d)} | {mae(d['actual'], d[f'proj_{a}']):.3f} | {mae(d['actual'], d[f'proj_{b}']):.3f} | "
@@ -92,7 +104,7 @@ def main():
     for m in MODELS:
         L.append(f"| {m} | " + " | ".join(f"{mae(big.loc[big.position == p, 'actual'], big.loc[big.position == p, f'proj_{m}']):.3f}"
                                          for p in POS) + " |")
-    (PROJECT_ROOT / "reports" / "exp_week1.md").write_text("\n".join(L) + "\n")
+    (PROJECT_ROOT / "reports" / ("exp_week1_fixed.md" if FIXED else "exp_week1.md")).write_text("\n".join(L) + "\n")
     print("\n".join(L))
 
 

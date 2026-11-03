@@ -127,3 +127,18 @@ def test_placebo_keeps_count_per_week_and_labels_whole_games():
     per_week = pd.Series(fake).groupby(g["week"]).sum() / 2  # two players per game
     assert per_week.tolist() == [1, 2]
     assert pd.Series(fake).groupby(g["game_id"]).nunique().max() == 1  # both players of a game share the label
+
+
+def test_situation_fit_ignores_uncalibrated_first_season_by_default():
+    """2019 medians are uncalibrated means: by default they must not influence any situation effect."""
+    from fantasy_projection_engine.situational import situation_multiplier
+    rng = np.random.default_rng(4)
+    rows = [dict(season=s, week=1, position="RB", player_id=f"p{i}", game_id=f"{s}_{i % 10}", med=m,
+                 actual=m * rng.lognormal(0, 0.2)) for s in (2019, 2020, 2021) for i in range(80) for m in [rng.uniform(5, 20)]]
+    d = pd.DataFrame(rows)
+    flag, mask = np.ones(len(d), bool), np.ones(len(d), bool)
+    a = situation_multiplier(d, "med", mask, flag, n_boot=50)[0]
+    d.loc[d.season == 2019, "actual"] *= 0.5  # wreck 2019
+    b = situation_multiplier(d, "med", mask, flag, n_boot=50)[0]
+    np.testing.assert_allclose(a, b)
+    assert (a[d.season <= 2020] == 1).all()  # 2020 has no calibrated season before it

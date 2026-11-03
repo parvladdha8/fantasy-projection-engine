@@ -50,9 +50,9 @@ def main():
         v4, _ = tune_opp_eff(g, train, cache, VOL_SHRINK_V2, rel, team=True, lines=True)
         fold["raw"] = project(g, with_eff_adj(v4, "lines"), cache)["proj"].to_numpy()
         fold["proj_v8m"] = median_calibration(fold, "raw", rel, "lad_mult")[0]
-        m12, t12, _ = situation_multiplier(fold, "proj_v8m", rel, pt)
-        m12p, _, pl = situation_multiplier(fold, "proj_v8m", rel, pt, player_level=True)
-        mph, tph, _ = situation_multiplier(fold, "proj_v8m", rel, fake)
+        m12, t12, _ = situation_multiplier(fold, "proj_v8m", rel, pt, first_season=2019)
+        m12p, _, pl = situation_multiplier(fold, "proj_v8m", rel, pt, player_level=True, first_season=2019)
+        mph, tph, _ = situation_multiplier(fold, "proj_v8m", rel, fake, first_season=2019)
         fold["proj_v12"], fold["proj_v12p"], fold["proj_v12placebo"] = (fold["proj_v8m"] * m for m in (m12, m12p, mph))
         for k, tau in [("lo", 0.1), ("hi", 0.9)]:
             fold[k] = quantile_band(fold, "raw", "z", every, tau)[0]

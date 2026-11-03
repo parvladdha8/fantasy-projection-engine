@@ -1,4 +1,4 @@
-# Experiment: Week 1 effect on the median (v11 / v11p), forward-chained OOS 2020–2023
+# Experiment: Week 1 effect on the median (v11 / v11p), first run (fitted on seasons ≥ 2019), forward-chained OOS 2020–2023
 
 ## Position-level Week 1 effect (fitted on Week 1s of seasons 2019..s−1; γ = % vs the v8m median)
 

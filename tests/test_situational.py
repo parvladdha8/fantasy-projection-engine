@@ -106,3 +106,24 @@ def test_week1_multiplier_walk_forward_and_week1_only():
     d2 = d.copy()
     d2.loc[d2.season == 2021, "actual"] *= 3  # the current season's outcomes must not matter
     np.testing.assert_allclose(week1_multiplier(d2, "med", mask, n_boot=50)[0], mult)
+
+
+
+def test_prime_time_flag_from_kickoff_time():
+    from fantasy_projection_engine.situational import prime_time_flags
+    sched = pd.DataFrame({"game_id": list("abcdef"), "game_type": ["REG"] * 5 + ["POST"],
+                          "weekday": ["Sunday", "Sunday", "Thursday", "Monday", "Thursday", "Sunday"],
+                          "gametime": ["13:00", "20:20", "20:15", "19:15", "16:30", "20:20"]})
+    f = prime_time_flags(sched).set_index("game_id")
+    assert f["prime_time"].to_dict() == {"a": False, "b": True, "c": True, "d": True, "e": False}  # Thanksgiving 4:30 = day
+    assert f.loc["b", "slot"] == "Sun night" and f.loc["e", "slot"] == "day"
+
+
+def test_placebo_keeps_count_per_week_and_labels_whole_games():
+    from fantasy_projection_engine.situational import placebo_flags
+    g = pd.DataFrame({"season": 2020, "week": np.repeat([1, 2], 20), "game_id": [f"w{w}g{i // 2}" for w in (1, 2) for i in range(20)]})
+    flag = g["game_id"].isin(["w1g0", "w2g3", "w2g4"]).to_numpy()
+    fake = placebo_flags(g, flag, seed=3)
+    per_week = pd.Series(fake).groupby(g["week"]).sum() / 2  # two players per game
+    assert per_week.tolist() == [1, 2]
+    assert pd.Series(fake).groupby(g["game_id"]).nunique().max() == 1  # both players of a game share the label

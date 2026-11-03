@@ -70,7 +70,7 @@ def week_multiplier(df: pd.DataFrame, proj_col: str, fit_mask: np.ndarray, mode:
 
 
 # ---------------------------------------------------------------------------------------------
-# Week 1 effect (v11 / v11p), applied to the MEDIAN projection. See DECISIONS.md (2026-11-02).
+# Situation effects on the MEDIAN projection: Week 1 (v11 / v11p), prime time (v12 / v12p). See DECISIONS.md (2026-11-02).
 #
 #   position level  median_w1 = median × (1 + γ_pos)
 #       raw γ_pos   LAD through the origin on earlier seasons' Week 1 fit rows: actual ≈ (1+γ)·median
@@ -138,11 +138,20 @@ def fit_week1_players(u: np.ndarray, player: np.ndarray, pos: np.ndarray) -> pd.
 def week1_multiplier(df: pd.DataFrame, med_col: str, fit_mask: np.ndarray, player_level: bool = False,
                      first_season: int = 2019, n_boot: int = 200) -> tuple[np.ndarray, pd.DataFrame, pd.DataFrame]:
     """Walk-forward Week 1 multiplier (1 for other weeks / no earlier data). Returns (mult, position table, player table)."""
-    seasons, week = df["season"].to_numpy(), df["week"].to_numpy()
+    return situation_multiplier(df, med_col, fit_mask, df["week"].to_numpy() == 1, player_level, first_season, n_boot)
+
+
+def situation_multiplier(df: pd.DataFrame, med_col: str, fit_mask: np.ndarray, flag: np.ndarray,
+                         player_level: bool = False, first_season: int = 2019,
+                         n_boot: int = 200) -> tuple[np.ndarray, pd.DataFrame, pd.DataFrame]:
+    """Same estimator for any pre-game situation flag (Week 1, prime time, ...): rows with flag get
+    median × (1 + γ_pos [+ player deviation]); other rows get 1."""
+    seasons = df["season"].to_numpy()
+    flag = np.asarray(flag, bool)
     pos, pid = df["position"].to_numpy(), df["player_id"].to_numpy()
     x, y = df[med_col].to_numpy(float), df["actual"].to_numpy(float)
     games = df["game_id"].to_numpy()
-    ok = fit_mask & (week == 1) & np.isfinite(x) & np.isfinite(y) & (x > 0) & (seasons >= first_season)
+    ok = fit_mask & flag & np.isfinite(x) & np.isfinite(y) & (x > 0) & (seasons >= first_season)
     mult, ptabs, pltabs = np.ones(len(df)), [], []
     for s in np.unique(seasons):
         train = ok & (seasons < s)
@@ -151,7 +160,7 @@ def week1_multiplier(df: pd.DataFrame, med_col: str, fit_mask: np.ndarray, playe
         t = fit_week1_position(y[train], x[train], pos[train], games[train], n_boot, seed=int(s))
         ptabs.append(t.assign(season=s))
         g_pos = dict(zip(t["position"], t["gamma"]))
-        here = np.flatnonzero((seasons == s) & (week == 1))
+        here = np.flatnonzero((seasons == s) & flag)
         gam = np.array([g_pos.get(p, 0.0) for p in pos[here]])
         if player_level:
             base = x[train] * (1 + np.array([g_pos[p] for p in pos[train]]))
@@ -162,3 +171,28 @@ def week1_multiplier(df: pd.DataFrame, med_col: str, fit_mask: np.ndarray, playe
         mult[here] = 1 + gam
     cat = lambda L: pd.concat(L, ignore_index=True) if L else pd.DataFrame()
     return mult, cat(ptabs), cat(pltabs)
+
+
+PRIME_TIME_START = "19:00"  # US Eastern; fixed in advance (DECISIONS.md, 2026-11-02)
+
+
+def prime_time_flags(schedules: pd.DataFrame) -> pd.DataFrame:
+    """game_id → prime_time (kickoff ≥ 19:00 ET) and slot (Thu / Sun night / Mon / Sat night / other night / day)."""
+    s = schedules.loc[schedules["game_type"] == "REG", ["game_id", "weekday", "gametime"]].copy()
+    s["prime_time"] = s["gametime"] >= PRIME_TIME_START  # "HH:MM" strings compare correctly
+    names = {"Thursday": "Thu night", "Sunday": "Sun night", "Monday": "Mon night", "Saturday": "Sat night"}
+    s["slot"] = np.where(s["prime_time"], s["weekday"].map(names).fillna("other night"), "day")
+    return s[["game_id", "prime_time", "slot"]]
+
+
+def placebo_flags(games: pd.DataFrame, flag: np.ndarray, seed: int = 0) -> np.ndarray:
+    """Placebo: in each season-week, give the flag to the same NUMBER of games as truly had it, chosen at random."""
+    rng = np.random.default_rng(seed)
+    gm = pd.DataFrame({"season": games["season"].to_numpy(), "week": games["week"].to_numpy(),
+                       "game_id": games["game_id"].to_numpy(), "flag": np.asarray(flag, bool)}).drop_duplicates("game_id")
+    fake = set()
+    for _, w in gm.groupby(["season", "week"]):
+        k = int(w["flag"].sum())
+        if k:
+            fake.update(rng.choice(w["game_id"].to_numpy(), k, replace=False))
+    return games["game_id"].isin(fake).to_numpy()

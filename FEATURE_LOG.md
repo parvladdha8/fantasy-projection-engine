@@ -66,6 +66,9 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-02 | **Week 1 effect v11** (Week 1 median × (1 + γ_pos), LAD, EB-shrunk to 0) | **Big-60 Week 1 vs v8m** (game-clustered) | 6.158 | 6.105 | **−0.053** | [−0.192, +0.084] | ❌ **Not adopted** (p = 0.21; pre-registered headline) |
 | 2026-11-02 | Week 1 effect v11 (secondary) | All players Week 1 vs v8m | 4.459 | 4.416 | −0.043 | [−0.076, −0.009] | ⚠️ Significant (p = 0.006) but not the headline; does not override the rule |
 | 2026-11-02 | Player-specific Week 1 effect v11p (partial pooling toward position) | Big-60 Week 1 vs v11 | 6.105 | 6.272 | +0.167 | [+0.065, +0.270] | ❌ **Rejected**: worse |
+| 2026-11-02 | **Prime-time effect v12** (kickoff ≥ 19:00 ET: median × (1 + γ_pos), EB-shrunk to 0) | **Big-60 prime-time vs v8m** | 6.414 | 6.442 | **+0.028** | [−0.022, +0.082] | ❌ **Rejected** (pre-registered headline) |
+| 2026-11-02 | Prime-time placebo (label on random games) | Big-60 placebo games vs v8m | 6.318 | 6.403 | +0.085 | [+0.012, +0.162] | ⚠️ Placebo fitted γ as negative as the real one → exposed a fitting bug (see DECISIONS) |
+| 2026-11-02 | Player "prime-time splits" v12p | Big-60 prime-time vs v12 | 6.442 | 6.463 | +0.021 | [−0.054, +0.094] | ❌ **Rejected** |
 
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 

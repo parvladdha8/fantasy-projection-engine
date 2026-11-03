@@ -375,3 +375,39 @@ The steps add up exactly to the median (checked to 1e-15).
   - This is the rule-2 lesson in its clearest form. Even shrunk, a player effect estimated from 1–3 games hurts. Week 1 deviations are not a stable player trait in this data.
 **Floor/ceiling in Week 1:** Coverage is 82.6% vs 82.5% in other weeks, so the ranges need no Week 1 fix.
 **Logged as a failed feature** (rigor rule 3). It is a candidate to **re-test once more openers exist** (2026+ live seasons), pre-registered the same way. It must not be re-tested on 2024 (spent) or 2025 (test).
+
+### 2026-11-02: Prime-time effect (v12): pre-registration (written before results)
+**Definition (fixed in advance, from the schedule only):** A game is prime time if its scheduled kickoff (nflverse `gametime`, US Eastern) is at **19:00 or later**. That covers Sunday, Monday, Thursday and Saturday night games. Thanksgiving/Christmas afternoon games, London morning games and Sunday 1 pm / 4 pm games are not prime time. The flag is known well before kickoff, so there is no look-ahead.
+**Economic story:**
+  - Prime-time games are stand-alone national games. Defenses get extra preparation for featured opponents.
+  - Thursday games come on short rest.
+  - Betting folklore says prime-time games go "under".
+**The key question:** Our model already uses the betting total for every game, so a league-wide prime-time scoring effect should already be priced in. The question is whether players' points *still* differ in prime time after the market's line. CLAUDE.md lists "prime-time splits" as a core situational effect, including player-specific ones.
+**Model v12 (position level):** For prime-time rows, median × (1 + γ_pos). γ_pos is fitted by LAD through the origin on prime-time fantasy-relevant player-games from seasons 2019..s−1 (walk-forward), with the standard error from a bootstrap over games. It is EB-shrunk toward 0 across positions, with exactly the Week 1 machinery: τ² = max(0, mean(γ²) − mean(se²)), B = se²/(se² + τ²).
+**Model v12p (player level, on top of v12):** "Prime-time players". The player's average prime-time residual ratio over his earlier prime-time games is partially pooled toward the position effect (normal–normal, B_i reported), as in v11p.
+**Placebo (v12-placebo):** The same as v12, but the "prime-time" label goes to randomly chosen games: in each week, the same number of games as truly were prime time, with a fixed seed. If the placebo also "helps", the gain comes from the procedure (for example, a general recalibration), not from prime time.
+**Test (OOS 2020–23):** Re-tuned per fold as in every experiment.
+  - Pool: the Big-60 union, **restricted to prime-time player-games**. The paired bootstrap is clustered by season-week, which is possible here because prime time occurs every week (about 72 clusters).
+  - **Headline: v12 vs v8m on Big-60 prime-time rows. Adopt v12 only if p < 0.05 and v12 beats v12-placebo** (on that placebo's own prime-time rows: the placebo is judged on the rows it modifies).
+  - Adopt v12p only if v12p vs v12 also has p < 0.05.
+  - Secondary: all players on prime-time rows, and the full-season Big-60 (v12 changes only prime-time rows).
+**Diagnostics (descriptive):** v8m's share above the median and its median error in prime time vs other games, by position, and by slot (Thursday / Sunday night / Monday / Saturday). Also floor/ceiling coverage in prime time.
+**Power:** About 15% of games are prime time, so expect roughly 700–800 Big-60 prime-time player-games, about three times the Week 1 sample. A 0.1-point effect is still marginal to detect.
+**Expectation:** Most likely a null. The betting total already carries prime-time scoring levels, and v5 converts implied points into both volume and efficiency. Player-level prime-time "splits" are a classic small-sample narrative, and they are expected to shrink to ~nothing (B_i ≈ 1).
+
+### 2026-11-02: Prime-time effect: result; REJECTED (position and player level). A fitting bug found by the placebo
+**Headline (pre-registered): v12 vs v8m, Big-60 prime-time player-games (n = 1,125), OOS 2020–23:** +0.028 [−0.022, +0.082]. It is worse. **Rejected.** Player-level prime-time splits (v12p) vs v12: +0.021, rejected. On all players, prime-time rows: −0.023 (p = 0.001). That is secondary and does not override the rule.
+**There is nothing to fix:**
+  - In prime time, 50.2% of top players score above their v8m median, against 50.8% in other games, and floor/ceiling coverage is 82.6% vs 82.3%.
+  - This is exactly what the expectation said. The betting total already prices the prime-time scoring level, and v5 converts it into volume and efficiency.
+  - Slot differences (Sunday night 45.6% above the median, Thursday 54.7%) are descriptive only. They point in opposite directions and were not tested.
+**Bug found by the placebo:**
+  - **What happened:** The placebo (prime-time labels on random games) fitted γ just as negative as the real flag (RB −18.5%, WR −9.9% in 2020). Random games should have no effect, so the fitting procedure itself had a problem.
+  - **The bug:** The situation effects were fitted on the v8m median of earlier seasons *starting in 2019*. But in 2019 the median calibration has no earlier season to learn from, so the 2019 "median" is the uncalibrated mean projection.
+  - **The size of it:** Checked with the frozen model, 2019's fit rows are over-projected by RB −13%, WR −7%, TE −8%, against roughly ±5% with no consistent sign in 2020–22.
+  - **Effect on the estimates:** Every situation γ was pulled negative. The pull is largest in early folds, where 2019 is all or half of the fit data.
+**Effect on the Week 1 result (correction to the entry above):**
+  - The claim that "every fold estimated a negative Week 1 effect for RBs/TEs" is **partly an artifact** of this bug. The 2020 fold was fitted on 2019 alone.
+  - The **diagnostic still stands**: in OOS 2020–23 Week 1 games, 42% of top players scored above their correctly calibrated median, vs 51% in other weeks. That is evidence of a real Week 1 over-projection.
+  - The v11 test itself (not adopted, p = 0.21) was run with the contaminated estimator, so it is not a clean test of the idea.
+**Fix (not yet applied, pending Parv's decision):** Fit situation effects only on seasons whose median was itself calibrated, i.e. seasons ≥ 2020 (first_season = 2020). The earlier v6 week-of-season test fitted on the mean projection (v5), not the median, so it was not affected. **Open question:** should Week 1 be re-run once with the fixed estimator and exactly the same pre-registered rule, clearly labelled as a bug-fix re-run? Prime time doesn't need a re-run: the diagnostic shows no prime-time deviation to capture.

@@ -74,6 +74,8 @@ Every candidate feature, kept or rejected (rigor rule 3). Evaluated on developme
 | 2026-11-02 | **Bad-weather effect v13** (outdoor AND (wind ≥ 15 mph OR temp ≤ 32°F): median × (1 + γ_pos), EB-shrunk, fitted on seasons ≥ 2020) | **Big-60 bad weather vs v8m, 2021–23** | 5.931 | 5.970 | **+0.039** | [−0.035, +0.118] | ❌ **Rejected** (pre-registered headline) |
 | 2026-11-02 | Weather placebo (label on random games) | Big-60 placebo games vs v8m | 6.036 | 6.105 | +0.070 | [−0.021, +0.167] | Procedure alone doesn't help |
 | 2026-11-02 | Weather placebo (label on random outdoor games) | Big-60 placebo games vs v8m | 6.209 | 6.209 | +0.000 | – | Fully shrunk to 0 (B = 1) every fold |
+| 2026-11-02 | **Opponent strength by position v14** (schedule-adjusted defense-vs-position, half-life 8 games, EB-shrunk per position) | **Big-60 all weeks vs v8m, 2021–23** | 6.375 | 6.375 | **−0.000** | [−0.021, +0.020] | ❌ **Rejected** (pre-registered headline); TE alone +0.047 (worse) |
+| 2026-11-02 | Opponent placebo (shuffled opponents) | Big-60 vs v8m | 6.375 | 6.376 | +0.001 | [−0.000, +0.002] | τ² ≈ 0 → fully shrunk, as it should be |
 
 **Note on team context:** Code kept (`team_context.py`, `CompParams.team`) because betting lines and injury reallocation need the share × team-volume structure. Re-test it once team volume is forward-looking (betting lines) rather than a backward-looking average.
 

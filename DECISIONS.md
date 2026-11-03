@@ -467,3 +467,47 @@ The steps add up exactly to the median (checked to 1e-15).
   - A better data source could change the answer. That is a reason to re-test weather only once the live pipeline has forecast data, under a new pre-registration, never on 2024/2025.
 **Logged as a failed feature** (rigor rule 3).
 **Unplanned observation (NOT tested, NOT a finding):** In dome/closed-roof games, 55.1% of top players beat their median (median error −0.89), vs 48.9% in fine outdoor games. This was noticed in the diagnostics, *after* looking at the data, so it is a hypothesis only. If it is tested, it needs its own pre-registration, placebo and the same adoption rule, and the write-up must say how the idea arose (forking-paths risk).
+
+### 2026-11-02: Opponent strength by position (v14): pre-registration (written before results)
+**Idea:** "Defense vs position". Some defenses give up more to a position (e.g. a weak linebacker group leaks points to TEs) than their overall quality suggests. CLAUDE.md lists it as "opponent strength (vs. position, adjusted for schedule)".
+**Economic story, and why it might already be priced:**
+  - Our median already uses the betting total and spread, which price the opponent's **overall** defensive quality.
+  - What the team total does *not* price is **which position** the defense is weak against. Bettors price that in player props, which we don't use.
+  - So the only effect left to find is position-specific. Popular "points allowed vs position" tables are thought to be mostly noise because they ignore who the defense faced. Rigor rule 2 (shrinkage) is the right tool for exactly this.
+**Schedule adjustment, built in:** We measure a defense by how much players **beat or missed their own pre-game median** against it, not by raw points allowed. A defense that faced elite WRs isn't punished for allowing points the WRs were expected to score anyway, because the median already includes who the players were.
+**Definition (fixed in advance):**
+  - Opponent = the other team in the game.
+  - For defense d, position p, game k: g_k = Σ actual / Σ v8m median over fantasy-relevant players of position p facing d, minus 1. The weight is w_k = Σ median, i.e. the expected points in that matchup.
+  - Raw effect before a game = decay-weighted average of d's earlier g_k at that position. Decay has a **half-life of 8 defense-games**, fixed in advance (same as the baseline) and not tuned. It carries across seasons, so early-season weeks lean on last year's defense, faded.
+  - Only games from seasons ≥ 2020 are used: the first calibrated median, the fixed estimator.
+  - **No look-ahead:** the effect for week W uses only games before week W. Residuals are known once those games finish, and the median is itself a pre-game number.
+**Shrinkage (empirical Bayes, per position):** Noise per game is σ²_p / w_k, so the raw effect's sampling variance is σ²_p · Σλ²w / (Σλw)², with λ the decay weights.
+  - σ²_p and the true spread across defenses τ²_p are estimated by method of moments from seasons 2020..s−1 only (walk-forward).
+  - B = sampling variance / (sampling variance + τ²_p); shrunk effect δ = (1 − B) · raw.
+  - **Model v14: median × (1 + δ_{opponent, position}).** The per-season B's and τ² are reported.
+**Placebo:** Each team's opponent is replaced by a random *other* team from the same week, with a fixed seed, before anything is fitted. A genuine defense effect should vanish. If the placebo also "helps", the gain is a generic recalibration.
+**Test:** Re-tuned per fold as in every experiment. Pool: the Big-60 union, **all weeks** (v14 adjusts every row). Paired bootstrap clustered by season-week.
+  - **Headline: v14 vs v8m, OOS 2021–23.** 2020 has no earlier season to estimate τ² from, so v14 = v8m there by construction (the same reasoning as weather, decided in advance).
+  - **Adopt only if p < 0.05 AND v14 has lower MAE than v14-placebo** (paired, reported with its p).
+  - Secondary: all players; per-position MAE; the descriptive 2020–23 pool.
+**Diagnostics:**
+  - τ²_p by position: how much real spread between defenses exists.
+  - The distribution of shrunk effects.
+  - A "stickiness" check: whether a defense's effect in the first half of a season predicts the second half, per position.
+**Power:** About 3,700 Big-60 rows in 2021–23, so a 0.03-point improvement is detectable. **Expectation:** Small. TE and WR are the most plausible positions; most effects should shrink heavily.
+**Clarification, added before any results (same day):** The raw effect is measured **relative to the league-wide ratio** at that position, R_p = Σ actual / Σ median over the training seasons: raw = (decayed ΣA / decayed ΣM) / R_p − 1. Points are right-skewed, so actual points average above the *median*. Without this centering, every defense would look "weak" and v14 would shift all medians up, undoing the median calibration. τ²_p is estimated from defense-season deviations from that season's league ratio.
+
+### 2026-11-02: Opponent strength by position: result; REJECTED
+**Headline (pre-registered): v14 vs v8m, Big-60, all weeks, OOS 2021–23 (n = 3,853):** −0.000 [−0.021, +0.020], p = 0.49. **No improvement; rejected.** v14 vs placebo −0.001 (p = 0.46). All players −0.001 (p = 0.36).
+**By position (descriptive):** RB −0.015, WR −0.010 and QB −0.001, all non-significant. **TE +0.047 (worse)**, so the position where the model trusted defense effects most is where it lost.
+**What the shrinkage did:**
+  - QB: τ² ≈ 0, so it is fully shrunk (B 0.96). The betting total already captures the opponent for QBs.
+  - RB/WR: an estimated true spread of 5–10% between defenses; B ≈ 0.7; typical δ within ±5%.
+  - TE: the estimated true spread is about 20%, so B is only 0.43 and δ reached ±14% (10th/90th percentile), up to 49%.
+  - The placebo's τ² is ≈ 0 at every position, so real defenses *do* differ more than shuffled ones *within a season*.
+**Why it still fails: the differences don't persist.**
+  - A defense's first-half deviation barely predicts its second half: correlation +0.04 to +0.07 (placebo −0.06 to +0.05).
+  - The season-level spread τ² mixes a persistent part (tiny) with things like one big game or a mid-season injury, which the normal noise model doesn't separate. So EB over-trusted the TE effects.
+  - Lesson for the paper: **τ² estimated at one time scale (a season) can overstate how much an effect persists at the scale you forecast at (next week).** A stickiness check belongs next to every EB fit.
+**Economic reading:** After the betting total and spread, "defense vs position" carries essentially no forecastable information. This matches the view that DvP tables are mostly noise.
+**Logged as a failed feature** (rigor rule 3). It is not re-tuned (e.g. a different half-life or a TE-only version): that would be searching for forks after seeing a null.

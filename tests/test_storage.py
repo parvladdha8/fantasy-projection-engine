@@ -77,3 +77,15 @@ def test_parse_db_url_special_characters():
     c = parse_db_url("postgresql://postgres.abc:p@ss:w#rd@aws-0-us-east-1.pooler.supabase.com:5432/postgres")
     assert c == {"user": "postgres.abc", "password": "p@ss:w#rd", "host": "aws-0-us-east-1.pooler.supabase.com",
                  "port": 5432, "dbname": "postgres"}
+
+
+def test_late_freeze_copies_pre_kickoff_run_and_records_real_write_time():
+    """GitHub's scheduler can run late: the freeze must still copy the run that started before kickoff."""
+    c = connect_sqlite()
+    _run(c, "r1", "2026-11-08T17:00:00Z", 14.0)
+    _run(c, "r2", "2026-11-08T18:20:00Z", 50.0)   # started after kickoff
+    ko = pd.DataFrame({"game_id": ["G1"], "kickoff": ["2026-11-08T18:00:00Z"]})
+    assert freeze_games(c, ko, now="2026-11-08T18:45:00Z") == 1   # 45 minutes late
+    f = pd.read_sql_query("SELECT * FROM frozen_projections", c)
+    assert f["projected"].tolist() == [14.0]
+    assert f["frozen_at"].tolist() == ["2026-11-08T18:00:00Z"] and f["recorded_at"].tolist() == ["2026-11-08T18:45:00Z"]

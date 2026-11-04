@@ -1,0 +1,21 @@
+name: Report a failed run
+description: Open a GitHub issue (or comment on the open one) with the plain-English cause from failure.md.
+inputs:
+  step:
+    description: Which pipeline step failed
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        STEP: ${{ inputs.step }}
+      run: |
+        if [ -f failure.md ]; then body_file=failure.md; else
+          printf '**Step:** %s\n\n**Likely cause (plain English):** the run failed during setup (installing packages or downloading the frozen data), before our code started.\n\n**Run log:** %s/%s/actions/runs/%s\n\nThe last good projections are still the ones being served.\n' \
+            "$STEP" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > setup_failure.md; body_file=setup_failure.md; fi
+        gh label create pipeline-failure --color B60205 --description "A scheduled pipeline run failed" 2>/dev/null || true
+        open=$(gh issue list --label pipeline-failure --state open --json number --jq '.[0].number')
+        if [ -n "$open" ]; then gh issue comment "$open" --body-file "$body_file"
+        else gh issue create --title "Pipeline run failed: $STEP" --label pipeline-failure --body-file "$body_file"; fi

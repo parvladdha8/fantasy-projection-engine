@@ -112,19 +112,21 @@ def freeze_games(conn, kickoffs: pd.DataFrame, now: str | None = None, source: s
     Returns the number of player rows frozen. Already-frozen games are skipped (the table is immutable)."""
     now = now or utc_now()
     done = {r[0] for r in conn.execute(_sql(conn, "SELECT DISTINCT game_id FROM frozen_projections WHERE source = ?"), (source,))}
-    n = 0
+    n, cache = 0, {}
     for g in kickoffs.itertuples():
         if g.kickoff > now or g.game_id in done:
             continue
-        p = latest_ok_projections(conn, before=g.kickoff)
+        if g.kickoff not in cache:  # games sharing a kickoff time (e.g. Sunday 1 pm) share one lookup
+            cache[g.kickoff] = latest_ok_projections(conn, before=g.kickoff)
+        p = cache[g.kickoff]
         p = p[(p["game_id"] == g.game_id) & p[column].notna()]
         if column != "median":  # floor/ceiling belong to our median only
             p = p.assign(floor=float("nan"), ceiling=float("nan"))
         conn.cursor().executemany(_sql(conn, "INSERT INTO frozen_projections (source, player_id, game_id, season, week, position, team, "
-                                    "projected, floor, ceiling, kickoff, frozen_at, origin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+                                    "projected, floor, ceiling, kickoff, frozen_at, origin, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
                          [(source, r.player_id, r.game_id, int(r.season), int(r.week), r.position, r.team, float(getattr(r, column)),
                            None if pd.isna(r.floor) else float(r.floor), None if pd.isna(r.ceiling) else float(r.ceiling),
-                           g.kickoff, min(now, g.kickoff), r.run_id) for r in p.itertuples()])
+                           g.kickoff, min(now, g.kickoff), r.run_id, now) for r in p.itertuples()])
         n += len(p)
     conn.commit()
     return n

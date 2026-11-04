@@ -90,6 +90,15 @@ def roster_for(inp: dict, season: int, week: int) -> tuple[pd.DataFrame, str]:
     return r[["gsis_id", "team", "status"]].rename(columns={"gsis_id": "player_id"}).dropna(subset=["player_id"]), src
 
 
+def kickoffs(schedules: pd.DataFrame, season: int) -> pd.DataFrame:
+    """game_id, week, kickoff (UTC ISO text) for a season's regular-season games. nflverse gives
+    gameday + gametime in US Eastern time; the conversion handles daylight-saving changes."""
+    s = schedules[(schedules["game_type"] == "REG") & (schedules["season"] == season)].dropna(subset=["gameday", "gametime"])
+    ko = pd.to_datetime(s["gameday"] + " " + s["gametime"]).dt.tz_localize("America/New_York").dt.tz_convert("UTC")
+    return pd.DataFrame({"game_id": s["game_id"].to_numpy(), "week": s["week"].to_numpy(),
+                         "kickoff": ko.dt.strftime("%Y-%m-%dT%H:%M:%SZ").to_numpy()})
+
+
 def next_week(schedules: pd.DataFrame, season: int) -> int:
     reg = schedules[(schedules["game_type"] == "REG") & (schedules["season"] == season)]
     up = reg[reg["home_score"].isna()]

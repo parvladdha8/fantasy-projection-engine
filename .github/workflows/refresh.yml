@@ -1,0 +1,38 @@
+# Living projections: download the latest 2026 data, project the next week, save the run to Supabase.
+# Schedule pre-registered in DECISIONS.md (2026-11-04). Times are UTC; PT = UTC − 8 in winter.
+name: Refresh projections
+on:
+  schedule:
+    - cron: "0 13 * * *"          # daily, 5 am PT
+    - cron: "20 */3 * * 4,5,6,0"  # Thu–Sun every 3 hours (injury news moves fastest)
+  workflow_dispatch: {}           # "Run workflow" button for manual runs
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: pipeline                 # refresh and freeze never write at the same time
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Refresh (download → project → save → verify)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: uv run python scripts/run_pipeline.py
+      - name: Keep this run's 2026 download for 14 days (traceability)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-pull-${{ github.run_id }}
+          path: data/live/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Report failure
+        if: failure()
+        uses: ./.github/actions/report-failure
+        with:
+          step: refresh

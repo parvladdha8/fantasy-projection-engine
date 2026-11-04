@@ -88,3 +88,15 @@ def test_live_pulls_never_touch_frozen_raw_and_pick_latest(tmp_path, monkeypatch
             (d / f"{t}.parquet").touch()
     assert data.latest_live(2026).name == "20261102T000000Z"   # newest COMPLETE pull, not a half-written one
     assert data.LIVE_DIR != data.RAW_DIR and data.RAW_DIR.name == "raw"
+
+
+def test_verify_frozen_detects_changed_file(tmp_path):
+    import pytest
+    from fantasy_projection_engine.data import sha256, verify_frozen
+    (tmp_path / "a.parquet").write_bytes(b"original")
+    m = tmp_path / "m.sha256"
+    m.write_text(f"{sha256(tmp_path / 'a.parquet')}  a.parquet\n")
+    assert verify_frozen(tmp_path, m) == 1
+    (tmp_path / "a.parquet").write_bytes(b"revised")
+    with pytest.raises(RuntimeError, match="checksum"):
+        verify_frozen(tmp_path, m)

@@ -15,7 +15,8 @@ import sys
 import numpy as np
 
 from fantasy_projection_engine import LIVE_SEASON
-from fantasy_projection_engine.data import PROJECT_ROOT, latest_live, pull_live
+from fantasy_projection_engine.alerts import write_failure
+from fantasy_projection_engine.data import PROJECT_ROOT, latest_live, pull_live, verify_frozen
 from fantasy_projection_engine.live import live_games
 from fantasy_projection_engine.predict import predict
 from fantasy_projection_engine.storage import (PROJ_COLS, connect_postgres, connect_sqlite, finish_run,
@@ -33,6 +34,7 @@ def code_version() -> str:
 def main(argv):
     local, pull_new = "--local" in argv, "--no-pull" not in argv
     season = LIVE_SEASON
+    verify_frozen()  # the frozen 2018–25 data must be byte-for-byte what the model was tested on
     pull = pull_live(season) if pull_new else latest_live(season)
     conn = connect_sqlite(PROJECT_ROOT / "db" / "local.sqlite") if local else connect_postgres()
     run_id = f"run-{utc_now()}"
@@ -54,7 +56,7 @@ def main(argv):
         conn.rollback()
         finish_run(conn, run_id, ok=False, error=f"{type(e).__name__}: {e}"[:2000])
         print(f"RUN FAILED ({run_id}): {type(e).__name__}: {e}\nThe last good projections are still the ones served.")
-        raise SystemExit(1)
+        raise
 
     # Independent check: what the site would serve now = this run, identical to what we computed.
     served = latest_ok_projections(conn)
@@ -72,4 +74,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    try:
+        main(sys.argv[1:])
+    except Exception as e:  # anything, including failures before the run was recorded (download, database connection)
+        print(write_failure("refresh (download → project → save)", e))
+        raise SystemExit(1)

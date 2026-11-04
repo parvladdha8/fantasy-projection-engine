@@ -61,3 +61,11 @@ def test_roster_week1_offseason_mover():
     roster = pd.DataFrame({"player_id": ["mover"], "team": ["AAA"], "status": ["ACT"]})
     c = candidates(pg, _sch(2026, 1), 2026, 1, roster)
     assert c["team"].tolist() == ["AAA"]           # offseason signing is placed on his new team
+
+
+def test_kickoffs_convert_eastern_to_utc_across_daylight_saving():
+    from fantasy_projection_engine.live import kickoffs
+    s = pd.DataFrame({"game_id": ["a", "b", "c"], "season": 2026, "week": [8, 9, 1], "game_type": ["REG", "REG", "POST"],
+                      "gameday": ["2026-10-25", "2026-11-08", "2027-01-10"], "gametime": ["13:00", "13:00", "16:30"]})
+    k = kickoffs(s, 2026)
+    assert k["kickoff"].tolist() == ["2026-10-25T17:00:00Z", "2026-11-08T18:00:00Z"]   # EDT (−4) then EST (−5); playoffs left out

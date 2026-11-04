@@ -1,0 +1,14 @@
+name: Set up the project
+description: Install uv + Python, the locked packages, and the frozen 2018–25 data (fingerprint-checked by the scripts).
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v6
+    - name: Install Python and locked packages
+      shell: bash
+      run: uv sync --frozen
+    - name: Download frozen 2018–25 data (GitHub release frozen-data-v1)
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh release download frozen-data-v1 --repo "$GITHUB_REPOSITORY" --dir data/raw --pattern '*.parquet'

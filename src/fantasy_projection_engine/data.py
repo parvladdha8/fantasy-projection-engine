@@ -68,6 +68,28 @@ def load_players() -> pd.DataFrame:
     return pd.read_parquet(RAW_DIR / "players.parquet")
 
 
+FROZEN_MANIFEST = PROJECT_ROOT / "data_manifest" / "frozen_raw.sha256"
+
+
+def sha256(path: Path) -> str:
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def verify_frozen(raw_dir: Path = RAW_DIR, manifest: Path = FROZEN_MANIFEST) -> int:
+    """Check every frozen 2018–25 file against its recorded SHA-256 fingerprint; raise if any is missing or differs.
+    Returns the number of files checked."""
+    lines = [l.split() for l in manifest.read_text().splitlines() if l.strip()]
+    bad = [name for digest, name in lines if not (raw_dir / name).exists() or sha256(raw_dir / name) != digest]
+    if bad:
+        raise RuntimeError(f"checksum mismatch or missing frozen file(s): {', '.join(bad)}")
+    return len(lines)
+
+
 def pull_live(season: int, stamp: str | None = None) -> Path:
     """Download the in-progress season into its OWN timestamped folder, data/live/<season>/<UTC stamp>/.
     The frozen 2018–2025 files in data/raw/ (behind every committed result) are never touched, and every

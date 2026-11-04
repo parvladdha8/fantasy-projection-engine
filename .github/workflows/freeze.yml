@@ -1,0 +1,31 @@
+# Kickoff freeze: copy the projection in effect at each game's kickoff (ours + baseline) into the immutable table.
+# Runs every 30 minutes; a late run is safe (it only copies runs that started before kickoff). DECISIONS.md, 2026-11-04.
+name: Kickoff freeze
+on:
+  schedule:
+    - cron: "7,37 * * * *"        # off the top of the hour, when GitHub's scheduler is busiest
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Python and locked packages
+        run: uv sync --frozen
+      - name: Freeze games that have kicked off
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: uv run python scripts/freeze_live.py
+      - name: Report failure
+        if: failure()
+        uses: ./.github/actions/report-failure
+        with:
+          step: kickoff freeze

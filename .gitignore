@@ -23,3 +23,6 @@ data/
 
 # Local test databases
 *.sqlite
+
+# Failure report written by a failed run (posted as a GitHub issue)
+failure.md

@@ -631,3 +631,26 @@ The steps add up exactly to the median (checked to 1e-15).
 - **The first attempt failed, and the safety design worked:** the run was recorded as `failed` with its error (Postgres connections have no `executemany`; fixed by saving through a cursor) and nothing was served from it. The failed row is kept on purpose as an honest record.
 - **Second attempt ok:** 448 week-9 players saved; the served run is this run; read-back matches (largest difference 5e-14, floating-point rounding; text fields identical).
 - No week-9 players are designated Out yet, as expected: injury reports come out Wed–Fri, and the Thu–Sun refreshes (Phase 4) will pick them up.
+
+### 2026-11-04: Phase 4 schedule (pre-registered before building)
+**Secret:** `SUPABASE_DB_URL` stored as a GitHub Secret (sent straight from `.env`; never printed).
+**Where the GitHub computer gets its data:** the frozen 2018–25 files behind every committed result are not in git (too big, and `data/` is ignored).
+- They are uploaded once as a GitHub Release (`frozen-data-v1`), with a checksum file committed to the repo (`data_manifest/frozen_raw.sha256`). Every run downloads them and **refuses to continue if any checksum differs**, so the live model always uses exactly the data it was tested on.
+- nflverse data is CC BY 4.0 (re-sharing allowed with credit); the release notes credit nflverse.
+- Re-downloading 2018–25 from nflverse on every run was rejected: nflverse occasionally revises history, which would quietly change the model's inputs.
+- Each run's 2026 download is kept as a GitHub artifact for **14 days** (about 40 runs a week × ~3 MB; a longer window could exceed GitHub's free artifact storage), so any projection can be traced back to its exact data while it is being graded.
+
+**Workflows** (times in UTC; the US is on standard time, so PT = UTC − 8):
+1. **Refresh** (`refresh.yml`): download → project next week → save the run to Supabase.
+   - Daily at 13:00 (5 am PT).
+   - Thu–Sun every 3 hours.
+2. **Kickoff freeze** (`freeze.yml`): every 30 minutes, every day.
+   - Freezes each game whose kickoff has passed, for both `ours` and `baseline`.
+   - **GitHub's scheduler can run late.** That is safe by design: a freeze always copies the latest ok run that *started before kickoff*. A late freeze can only be late in writing, never in what it copies.
+   - New column `recorded_at`: the real time the row was written. `frozen_at` stays "the moment it represents" (≤ kickoff). Both are public, so any lateness is visible.
+   - Running every day (not just game days) covers Saturday, Christmas and international games without special cases.
+3. **Overlap rule:** refresh and freeze share one queue, so they never write at the same time.
+4. **Failure alert:** any failed run opens a GitHub issue (or comments on the open one) with the error and a plain-English cause. Failed runs are also recorded in `runs` and never served.
+
+**Next step, not in this one:** Tuesday scoring (actuals → Big 60 vs baseline), before week 9's games finish grading on Tue 2026-11-10.
+**Switch-on:** the workflows are tested by one manual run before the schedule is relied on.

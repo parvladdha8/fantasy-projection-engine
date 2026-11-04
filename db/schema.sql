@@ -59,6 +59,8 @@ CREATE TABLE IF NOT EXISTS frozen_projections (
     kickoff         TEXT NOT NULL,
     frozen_at       TEXT NOT NULL,
     origin          TEXT,              -- run_id (ours/baseline) or captured_at (platforms)
+    recorded_at     TEXT,              -- when the row was actually written (may be after kickoff if the scheduler ran late;
+                                       -- frozen_at is the moment it represents, always <= kickoff)
     PRIMARY KEY (source, player_id, game_id),
     CHECK (frozen_at <= kickoff)
 );

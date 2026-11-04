@@ -598,3 +598,23 @@ The steps add up exactly to the median (checked to 1e-15).
   - Same-team rows still match **exactly**: no look-ahead.
   - Fewer candidates who then didn't play (e.g. 2021 wk 14: 203 → 80), because reserve and practice-squad players are now excluded before the game.
 **Live 2026 week 9 (new pull 2026-11-04 04:20 UTC):** 448 players projected (was 529 without rosters; the difference is reserve, practice-squad and cut players). The team comes from the current roster saved in that pull, since the week-9 weekly roster isn't published yet. The old 2026 pull folder (without rosters) is kept for the record but is no longer "complete", so it is never used.
+
+### 2026-11-04: Storage design and Big 60 scoring rules (fixed before any live week is scored)
+**Storage principles:**
+  1. **Every refresh is kept.** Each pipeline run gets a `runs` row (time, data pull, git version, status), and its projections are stored under that run, never overwritten. The site shows the latest run whose status is `ok`, so **a failed run can never replace the last good projections** (CLAUDE.md).
+  2. **Frozen means frozen.** At each game's kickoff, the latest `ok` projection made *before* kickoff is copied into `frozen_projections`. The database itself refuses any later edit or delete (a trigger), and refuses a freeze stamped after kickoff (a check). Platform projections are frozen the same way, from their last snapshot before kickoff.
+  3. Platform snapshots, actual points and the inactive log are stored with timestamps, so any week can be re-scored from the raw records.
+**Big 60 rules (applied identically to every source, including "baseline"):**
+  - **Pool:** the platform's own frozen projections for the week. Players **inactive at kickoff are removed first** and logged; then the top 10 QB / 20 RB / 20 WR / 10 TE by that platform's projection form the pool. Removing inactives before selecting keeps the pool at 60, and the selection still uses only what was known at kickoff. Never selected on actual points.
+  - **Actual points:** a player active at kickoff with no stat line scored **0** (he was active and produced nothing).
+  - **Our projection missing for a pool player** (e.g. a rookie with no NFL history): the player is dropped from **both** sides for that week, and the number dropped is **published every week** next to the result. (Alternative considered: scoring our missing projection as 0. Rejected as too harsh for rookies, but the count keeps us honest; Parv may overrule.)
+  - **Metrics:** MAE (primary; lower wins the week; equal to 3 decimals = tie), RMSE, Spearman, per-position MAE. The running season record is W–L–T per platform.
+**First platform: our own baseline** (trailing average), which needs no permission. Other platforms are added as their permission and terms allow. Sleeper waits for its reply.
+
+### 2026-11-04: Storage and Big 60 scoring: built and verified
+- **Schema:** `db/schema.sql` (works on both Postgres and SQLite), with tables `runs`, `projections`, `consensus_snapshots`, `frozen_projections`, `actuals`, `inactive_log`, `leaderboard_weekly`, `leaderboard_position`. Immutability triggers: `db/immutable_postgres.sql` (Supabase) and `db/immutable_sqlite.sql` (tests).
+- **Design change made before deployment:** each projection row also stores the baseline's number from the **same run**, so one run freezes both "ours" and "baseline" together, exactly as live.
+- **Tests (11 new):**
+  - Storage: a failed run never replaces the last good one; the freeze uses the last ok run that started before kickoff; frozen rows can't be edited or deleted; a freeze stamped after kickoff is refused.
+  - Scoring: the pool is the platform's own top 60 (unchanged even if actual points are reversed); inactive players are removed before selection (next man up); our-projection-missing and no-stat-line rules; ties; running record.
+- **End-to-end dry run** (`scripts/dryrun_pipeline.py 2025`, SQLite): runs → kickoff freeze → actuals → Big 60 vs baseline. It **reproduces the 2025 test's weekly head-to-head exactly** (all 18 weekly MAEs, record 16–2). 2025 is used only to check plumbing; nothing is tuned.

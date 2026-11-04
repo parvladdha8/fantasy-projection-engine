@@ -511,3 +511,51 @@ The steps add up exactly to the median (checked to 1e-15).
   - Lesson for the paper: **τ² estimated at one time scale (a season) can overstate how much an effect persists at the scale you forecast at (next week).** A stickiness check belongs next to every EB fit.
 **Economic reading:** After the betting total and spread, "defense vs position" carries essentially no forecastable information. This matches the view that DvP tables are mostly noise.
 **Logged as a failed feature** (rigor rule 3). It is not re-tuned (e.g. a different half-life or a TE-only version): that would be searching for forks after seeing a null.
+
+### 2026-11-03: Phase 3 decisions (Parv)
+- **Non-commercial, confirmed:** the site has no ads, payments or sponsors. This is a condition of Open-Meteo's and Sleeper's free terms. If it ever changes, both need paid licences.
+- **Accounts:** Parv creates the GitHub and Supabase accounts himself. Claude walks him through it and never handles passwords. Keys go only in `.env` (git-ignored) and GitHub Secrets.
+- **Sleeper:** draft a permission email now (Parv sends it). Build everything else (nflverse, The Odds API, weather) without waiting for the reply. No Sleeper projections are collected or published until permission arrives.
+- **The Odds API:** verify its free-tier numbers **directly** (its own pricing/docs pages, or the response headers of a real call) before relying on them. Search-result summaries are not enough.
+- **Order:** run the one-time 2025 test **now**, before any live data goes public, then pull 2026 data.
+
+### 2026-11-03: 2025 final test: pre-registration (written before running; one time only)
+**What is tested:** The exact model that will go live. That is `predict()` with `reports/opp_eff_params.json` (tuned on 2019–23, validated once on 2024, then frozen), the ewma_hl8 baseline, and the walk-forward median (v8m) and floor/ceiling (v10) maps.
+  - **Nothing is re-tuned.** The walk-forward pieces fit on all earlier seasons (2019–24 for 2025) automatically, by design. That is not tuning on the test season.
+  - **No feature changes after this, whatever the result.** Every rejected feature stays rejected.
+  - Re-tuning settings on 2019–25 for the live 2026 model would be a *new, untested* model. It is not done. The live model is the tested model.
+**What has been seen of 2025 so far:** Schedule metadata only (game counts, roof/weather coverage in the weather experiment). No 2025 outcomes or errors have been looked at.
+**Headline (decided now):** The **median** (our published point projection) vs the baseline on the Big-60 union of both pools. MAE, paired bootstrap clustered by week, one-sided. **"Pass" = median beats the baseline with p < 0.05.**
+**Secondary, all reported whatever they show:**
+  - the mean (v5) vs the baseline (the 2024 validation's headline);
+  - all players;
+  - per position (descriptive);
+  - RMSE, Spearman, bias;
+  - floor–ceiling coverage (target ~80%; not a pass/fail) and coverage by position;
+  - the weekly head-to-head record on the baseline's own Big-60 (the CLAUDE.md format) and on ours.
+**Comparison with the past (descriptive):** the 2025 gain is set beside OOS 2020–23 (−0.245 for v8m vs baseline) and 2024.
+**One-time guard:** `scripts/test_2025.py` refuses to run if `reports/test_2025.md` exists.
+**If it fails:** It gets published as a failure, in the paper and the README. The model is not tweaked to pass. Any later model is a new model, and must be judged on live 2026+ seasons.
+
+### 2026-11-03: 2025 final test: result (PASSED). The model is final
+**Headline (pre-registered): median vs baseline, Big-60 union, 2025 (n = 1,224):** 6.295 vs 6.589, diff **−0.294** [−0.410, −0.185], p < 0.001. **Pass.**
+**Secondary:**
+  - Mean (v5) vs baseline −0.189 (p < 0.001), so the median step adds a further −0.105 on top of the mean, as it did on dev.
+  - All players −0.146.
+  - RMSE 8.20 vs 8.34; Spearman 0.372 vs 0.348.
+  - By position (descriptive): TE −0.36, RB −0.32, WR −0.32, QB −0.12. All four improve.
+  - Head-to-head on the baseline's own Big-60: **16–2**. On our own Big-60: 15–3.
+**Floor/ceiling:**
+  - Big-60 coverage 82.7% (8.3% below the floor, 9.1% above the ceiling); all players 80.1%. Both are close to the 80% target.
+  - QB is the weakest at 75.9%, with 15.3% below the floor. That is descriptive, and a candidate to watch in 2026; not fixed with 2025 data.
+**Compared with earlier seasons (descriptive):** The v8m median gained −0.245 OOS on 2020–23 and **−0.294 on 2025**, so there is no winner's-curse shrinkage this time. The mean (v5) gained −0.188 on dev, −0.158 on 2024 and −0.189 on 2025.
+**The 2024 hypotheses, checked descriptively:**
+  1. The late-season weakness did not recur: the losses were weeks 5 and 7, and weeks 13–18 went 6–0. That supports reading 2024's pattern as noise, consistent with the rejected week-of-season test.
+  2. The bias is not under-projection this time: the mean is +0.49 and the median −0.42, which is expected for a median of a right-skewed outcome.
+**2025 is now spent.** `scripts/test_2025.py` refuses to re-run. The model in `reports/opp_eff_params.json` with `predict()` is the **final, tested live model**. Any future change is a new model, judged only on live 2026+ seasons under a new pre-registration.
+
+### 2026-11-03: Live data storage, first 2026 pull, and the status of The Odds API
+- **Live pulls are kept separate and timestamped:** `data/live/<season>/<UTC stamp>/`. The frozen `data/raw/` (2018–25) is never re-downloaded or overwritten, so every committed result still reproduces. nflverse revises old data from time to time, and re-pulling would silently change past numbers.
+  - Every pull is kept (it is small), so for any frozen projection we can later show exactly which data it was made from.
+- **First pull (2026-11-03 21:35 UTC):** weeks 1–8 played (121 games); stats, snaps and injuries for weeks 1–8. **All 15 week-9 games have a spread and total in nflverse.** No temperature/wind for upcoming games.
+- **The Odds API: not verified, so not relied on.** Its website refused every automated connection from here. Parv will check the free-plan figures in a browser, and if we sign up, the first call's quota headers settle it. Because nflverse already carries next-week lines, The Odds API is now a *backup* for line freshness and timestamps, not a requirement.

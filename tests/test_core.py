@@ -76,3 +76,15 @@ def test_relevant_pool_slots_and_projection_only():
     })
     pool = big60_pool(df, slots=RELEVANT_SLOTS)
     assert len(pool) == 30 and set(pool.index) == set(range(10, 40))
+
+
+def test_live_pulls_never_touch_frozen_raw_and_pick_latest(tmp_path, monkeypatch):
+    import fantasy_projection_engine.data as data
+    monkeypatch.setattr(data, "LIVE_DIR", tmp_path)
+    for stamp, complete in [("20261101T000000Z", True), ("20261102T000000Z", True), ("20261103T000000Z", False)]:
+        d = tmp_path / "2026" / stamp
+        d.mkdir(parents=True)
+        for t in data.LIVE_TABLES if complete else data.LIVE_TABLES[:2]:
+            (d / f"{t}.parquet").touch()
+    assert data.latest_live(2026).name == "20261102T000000Z"   # newest COMPLETE pull, not a half-written one
+    assert data.LIVE_DIR != data.RAW_DIR and data.RAW_DIR.name == "raw"

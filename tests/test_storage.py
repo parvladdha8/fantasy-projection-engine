@@ -70,3 +70,10 @@ def test_one_run_freezes_ours_and_baseline_together():
     freeze_games(c, ko, now="2026-11-08T20:00:00Z", source="baseline", column="baseline")
     f = pd.read_sql_query("SELECT source, projected, floor FROM frozen_projections ORDER BY source", c)
     assert f["projected"].tolist() == [10.0, 12.0] and pd.isna(f["floor"].iloc[0]) and f["floor"].iloc[1] == 2.0
+
+
+def test_parse_db_url_special_characters():
+    from fantasy_projection_engine.storage import parse_db_url
+    c = parse_db_url("postgresql://postgres.abc:p@ss:w#rd@aws-0-us-east-1.pooler.supabase.com:5432/postgres")
+    assert c == {"user": "postgres.abc", "password": "p@ss:w#rd", "host": "aws-0-us-east-1.pooler.supabase.com",
+                 "port": 5432, "dbname": "postgres"}

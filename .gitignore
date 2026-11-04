@@ -12,6 +12,7 @@ wheels/
 # Secrets — never commit
 .env
 .env.*
+!.env.example
 
 # Data (re-downloadable; too large for git)
 data/

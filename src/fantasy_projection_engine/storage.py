@@ -34,6 +34,42 @@ def connect_sqlite(path: str | Path = ":memory:") -> sqlite3.Connection:
     return conn
 
 
+def parse_db_url(url: str) -> dict:
+    """Split a postgresql:// URL into connection settings, tolerating special characters in the password.
+
+    Supabase passwords may contain '@', ':' etc., which break normal URL parsing unless percent-encoded.
+    The host comes after the LAST '@'; the user is before the FIRST ':' of what precedes it.
+    """
+    rest = url.strip().split("://", 1)[1]
+    userinfo, _, hostpart = rest.rpartition("@")
+    user, _, password = userinfo.partition(":")
+    hostport, _, dbname = hostpart.partition("/")
+    host, _, port = hostport.partition(":")
+    return {"user": user, "password": password, "host": host, "port": int(port or 5432),
+            "dbname": dbname.split("?", 1)[0] or "postgres"}
+
+
+def read_env(name: str, path: Path = PROJECT_ROOT / ".env") -> str | None:
+    """Value of NAME from the environment (GitHub Secrets) or, failing that, the local git-ignored .env file."""
+    import os
+    if os.environ.get(name):
+        return os.environ[name]
+    if path.exists():
+        for line in path.read_text().splitlines():
+            if line.startswith(name + "="):
+                return line.split("=", 1)[1].strip()
+    return None
+
+
+def connect_postgres(url: str | None = None):
+    """Connection to Supabase Postgres. The password is never printed or logged."""
+    import psycopg
+    url = url or read_env("SUPABASE_DB_URL")
+    if not url:
+        raise RuntimeError("SUPABASE_DB_URL is not set (in .env locally, or as a GitHub Secret).")
+    return psycopg.connect(**parse_db_url(url), sslmode="require", connect_timeout=15)
+
+
 def start_run(conn, run_id: str, data_pull: str | None = None, code_version: str | None = None, at: str | None = None):
     conn.execute(_sql(conn, "INSERT INTO runs (run_id, started_at, status, data_pull, code_version) VALUES (?, ?, 'running', ?, ?)"),
                  (run_id, at or utc_now(), data_pull, code_version))

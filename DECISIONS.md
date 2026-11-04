@@ -618,3 +618,10 @@ The steps add up exactly to the median (checked to 1e-15).
   - Storage: a failed run never replaces the last good one; the freeze uses the last ok run that started before kickoff; frozen rows can't be edited or deleted; a freeze stamped after kickoff is refused.
   - Scoring: the pool is the platform's own top 60 (unchanged even if actual points are reversed); inactive players are removed before selection (next man up); our-projection-missing and no-stat-line rules; ties; running record.
 - **End-to-end dry run** (`scripts/dryrun_pipeline.py 2025`, SQLite): runs → kickoff freeze → actuals → Big 60 vs baseline. It **reproduces the 2025 test's weekly head-to-head exactly** (all 18 weekly MAEs, record 16–2). 2025 is used only to check plumbing; nothing is tuned.
+
+### 2026-11-04: Supabase connected (security setup)
+- **Account and project created by Parv** (free plan). Claude never saw the password; it lives only in the git-ignored `.env` (later, GitHub Secrets).
+- **Row Level Security on all 8 tables** (`db/supabase_security.sql`). The public (anon) key can only **read** runs, projections, actuals, the inactive log, the leaderboards, and our own frozen projections (source `ours` / `baseline`). It can write nothing. `consensus_snapshots` has no public policy, so platform data is never exposed in bulk through the API, only the Big 60 numbers we publish.
+- **Connection:** the Session pooler (IPv4-compatible). Passwords may contain characters such as `@` or `:`, which break ordinary URL parsing, so `storage.parse_db_url` splits the URL on the *last* `@` (tested). TLS is required.
+- **First connection test (read-only):** all 8 tables present, RLS on for each, immutability trigger `frozen_immutable` installed.
+- `.gitignore` fix: `.env.*` was also hiding `.env.example` (a template with no secrets); it is now explicitly allowed. `.env` itself stays ignored (checked).

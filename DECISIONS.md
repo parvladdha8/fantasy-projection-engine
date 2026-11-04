@@ -559,3 +559,23 @@ The steps add up exactly to the median (checked to 1e-15).
   - Every pull is kept (it is small), so for any frozen projection we can later show exactly which data it was made from.
 - **First pull (2026-11-03 21:35 UTC):** weeks 1–8 played (121 games); stats, snaps and injuries for weeks 1–8. **All 15 week-9 games have a spread and total in nflverse.** No temperature/wind for upcoming games.
 - **The Odds API: not verified, so not relied on.** Its website refused every automated connection from here. Parv will check the free-plan figures in a browser, and if we sign up, the first call's quota headers settle it. Because nflverse already carries next-week lines, The Odds API is now a *backup* for line freshness and timestamps, not a requirement.
+
+### 2026-11-03: Live rows for upcoming games: who gets a projection (rule fixed before building)
+**Candidates for team T's game in week W of season S:** every skill player whose **most recent game** in our data was for T (so traded players move with their new team), and who played for T at least once **in season S before week W**. In Week 1, when there are no season-S games yet, his most recent game (last season) must have been for T.
+  - **Excluded up front:** players designated **Out** for week W in the injury report, once that report exists (Wednesday–Friday). They are logged separately, and the same rule will apply to every source in the Big 60 (CLAUDE.md inactive policy). Doubtful/Questionable players keep their projection and are flagged.
+  - **Teams on bye** get no rows.
+**Known limits (disclosed):**
+  - Players with **no NFL game history** (rookies who haven't played, new signings with no snaps yet) get no projection. The baseline and the model both need at least one earlier game, so this is the same for both.
+  - Players returning from a long absence are projected from their older history, faded by the usual decay.
+  - Late scratches after the last injury report are handled by the inactive policy at kickoff.
+**Data:** History is the frozen 2018–25 files plus the latest live 2026 pull. The player-ID crosswalk is the frozen table, with only *new* IDs added from the live pull, so 2018–25 history is built exactly as before.
+**Proof of no look-ahead (required before use):** On past weeks, rebuilding a week as "upcoming" from only earlier data (results blanked, later weeks deleted) must reproduce the full-data median, floor and ceiling for the same players **exactly**.
+
+### 2026-11-03: Live rows: result of the no-look-ahead proof, and a roster gap
+**Proof (`scripts/check_live.py`, 2021 wk 14, 2023 wk 1, 2023 wk 10):** Every row rebuilt as "upcoming" from earlier data only, with the player on the same team, reproduces the full-data median, floor and ceiling **exactly** (max difference 0.0; 906 rows). **No look-ahead.**
+**The gap found: roster changes.** Game history can't see trades or signings until the player's first game for his new team.
+  - 2021 wk 14: Phillip Dorsett was put on SEA (his last game) instead of HOU, in the very game where he faced SEA.
+  - 2023 wk 1: two TEs who moved GB → CHI; also **6 Big-60 players missed** (Hopkins, Waller, J. Williams, Ridley, Montgomery, Swift), all offseason moves.
+  - Mid-season the effect is small: 0–1 wrong-team rows per week, and no Big-60 player missed in weeks 10/14. **In Week 1 it is serious.**
+**Fix proposed (needs Parv's OK, because it is a new download):** Take each player's *current team* from nflverse rosters (`load_rosters_weekly`), which reflect transactions before the game, instead of from his last game. A new no-look-ahead check must then confirm that the roster used for week W is one published before week W's kickoff.
+**First live run (2026 week 9, local only, nothing published):** 529 players projected, all with a median, floor and ceiling. Nobody is excluded yet, because the week-9 injury report comes out Wednesday–Friday. Projections are saved next to the data pull they came from.

@@ -89,7 +89,7 @@ def save_projections(conn, run_id: str, proj: pd.DataFrame):
         p = p.assign(baseline=float("nan"))
     rows = [tuple(None if pd.isna(v) else (v.item() if hasattr(v, "item") else v) for v in r)
             for r in p[PROJ_COLS].itertuples(index=False)]
-    conn.executemany(_sql(conn, f"INSERT INTO projections (run_id, {', '.join(PROJ_COLS)}) VALUES ({', '.join('?' * (len(PROJ_COLS) + 1))})"),
+    conn.cursor().executemany(_sql(conn, f"INSERT INTO projections (run_id, {', '.join(PROJ_COLS)}) VALUES ({', '.join('?' * (len(PROJ_COLS) + 1))})"),
                      [(run_id, *r) for r in rows])
     conn.commit()
 
@@ -120,7 +120,7 @@ def freeze_games(conn, kickoffs: pd.DataFrame, now: str | None = None, source: s
         p = p[(p["game_id"] == g.game_id) & p[column].notna()]
         if column != "median":  # floor/ceiling belong to our median only
             p = p.assign(floor=float("nan"), ceiling=float("nan"))
-        conn.executemany(_sql(conn, "INSERT INTO frozen_projections (source, player_id, game_id, season, week, position, team, "
+        conn.cursor().executemany(_sql(conn, "INSERT INTO frozen_projections (source, player_id, game_id, season, week, position, team, "
                                     "projected, floor, ceiling, kickoff, frozen_at, origin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
                          [(source, r.player_id, r.game_id, int(r.season), int(r.week), r.position, r.team, float(getattr(r, column)),
                            None if pd.isna(r.floor) else float(r.floor), None if pd.isna(r.ceiling) else float(r.ceiling),

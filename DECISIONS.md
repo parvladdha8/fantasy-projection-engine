@@ -625,3 +625,9 @@ The steps add up exactly to the median (checked to 1e-15).
 - **Connection:** the Session pooler (IPv4-compatible). Passwords may contain characters such as `@` or `:`, which break ordinary URL parsing, so `storage.parse_db_url` splits the URL on the *last* `@` (tested). TLS is required.
 - **First connection test (read-only):** all 8 tables present, RLS on for each, immutability trigger `frozen_immutable` installed.
 - `.gitignore` fix: `.env.*` was also hiding `.env.example` (a template with no secrets); it is now explicitly allowed. `.env` itself stays ignored (checked).
+
+### 2026-11-04: First live write to Supabase (week 9)
+- `scripts/run_pipeline.py`: download → project next week → save as a run → read back → only then mark the run `ok`. A run with fewer than 100 projected players is refused. `--local` runs the same steps into a local SQLite file.
+- **The first attempt failed, and the safety design worked:** the run was recorded as `failed` with its error (Postgres connections have no `executemany`; fixed by saving through a cursor) and nothing was served from it. The failed row is kept on purpose as an honest record.
+- **Second attempt ok:** 448 week-9 players saved; the served run is this run; read-back matches (largest difference 5e-14, floating-point rounding; text fields identical).
+- No week-9 players are designated Out yet, as expected: injury reports come out Wed–Fri, and the Thu–Sun refreshes (Phase 4) will pick them up.

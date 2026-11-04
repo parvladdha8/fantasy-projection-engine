@@ -8,8 +8,9 @@ import numpy as np
 import pandas as pd
 
 from fantasy_projection_engine.baseline import big60_pool
-from fantasy_projection_engine.data import PROJECT_ROOT, load_player_stats, load_players, load_schedules, load_snap_counts
-from fantasy_projection_engine.live import assemble, candidates, played_table
+from fantasy_projection_engine.data import (PROJECT_ROOT, load_player_stats, load_players, load_rosters_weekly,
+                                            load_schedules, load_snap_counts)
+from fantasy_projection_engine.live import assemble, candidates, played_table, roster_for
 from fantasy_projection_engine.predict import predict
 
 WEEKS = [(2021, 14), (2023, 1), (2023, 10)]
@@ -18,6 +19,7 @@ KEY = ["player_id", "game_id"]
 
 def main():
     sch = load_schedules()
+    inp = {"rosters_weekly": load_rosters_weekly(), "roster_now": None}
     pg = played_table(load_player_stats(), load_snap_counts(), load_players(), sch)
     from fantasy_projection_engine.baseline import prepare_games
     from fantasy_projection_engine.opp_eff import add_components
@@ -29,7 +31,8 @@ def main():
     ok = True
     for s, w in WEEKS:
         before = pg[(pg.season < s) | ((pg.season == s) & (pg.week < w))]
-        up = candidates(before, sch, s, w)
+        roster, _ = roster_for(inp, s, w)  # week-W weekly roster: team field only
+        up = candidates(before, sch, s, w, roster)
         live = predict(assemble(before, up, sch), allow_test=True)
         live = live[(live.season == s) & (live.week == w)]
         ref = full[(full.season == s) & (full.week == w)]
@@ -50,7 +53,8 @@ def main():
         if len(wrong_team):
             L.append(f"|  | wrong team: {', '.join(wrong_team.player_display_name_live + ' (' + wrong_team.team_live + ' → ' + wrong_team.team_full + ')')} |" + "  |" * 9)
     L += ["", f"**No look-ahead (same-team rows match exactly, ≤ 1e-9, same missing values): {'YES' if ok else 'NO'}**", "",
-          "Wrong-team rows and missed players come from roster changes (trades, signings) that game history alone can't see."]
+          "Teams come from the week-W roster (team field only). Wrong-team rows and missed players would come from roster "
+          "changes the roster doesn't show."]
     (PROJECT_ROOT / "reports" / "check_live.md").write_text("\n".join(L) + "\n")
     print("\n".join(L))
 

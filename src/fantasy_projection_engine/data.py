@@ -15,7 +15,7 @@ from . import SEASONS
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 LIVE_DIR = PROJECT_ROOT / "data" / "live"
-LIVE_TABLES = ["player_stats_week", "schedules", "snap_counts", "injuries", "players"]
+LIVE_TABLES = ["player_stats_week", "schedules", "snap_counts", "injuries", "players", "rosters_weekly", "rosters"]
 
 
 def pull_raw(seasons: list[int] = SEASONS) -> dict[str, Path]:
@@ -47,6 +47,11 @@ def load_injuries() -> pd.DataFrame:
     return pd.read_parquet(RAW_DIR / "injuries.parquet")
 
 
+def load_rosters_weekly() -> pd.DataFrame:
+    """Frozen 2018–25 weekly rosters (team per player per week). Added 2026-11-03 as a new file."""
+    return pd.read_parquet(RAW_DIR / "rosters_weekly.parquet")
+
+
 def load_player_stats() -> pd.DataFrame:
     return pd.read_parquet(RAW_DIR / "player_stats_week.parquet")
 
@@ -76,6 +81,8 @@ def pull_live(season: int, stamp: str | None = None) -> Path:
     nfl.load_snap_counts([season]).write_parquet(out / "snap_counts.parquet")
     nfl.load_injuries([season]).write_parquet(out / "injuries.parquet")
     nfl.load_players().write_parquet(out / "players.parquet")  # refreshed crosswalk (includes rookies)
+    nfl.load_rosters_weekly([season]).write_parquet(out / "rosters_weekly.parquet")
+    nfl.load_rosters([season]).write_parquet(out / "rosters.parquet")  # current roster AS OF this pull (pre-game)
     return out
 
 

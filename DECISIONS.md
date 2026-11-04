@@ -579,3 +579,22 @@ The steps add up exactly to the median (checked to 1e-15).
   - Mid-season the effect is small: 0–1 wrong-team rows per week, and no Big-60 player missed in weeks 10/14. **In Week 1 it is serious.**
 **Fix proposed (needs Parv's OK, because it is a new download):** Take each player's *current team* from nflverse rosters (`load_rosters_weekly`), which reflect transactions before the game, instead of from his last game. A new no-look-ahead check must then confirm that the roster used for week W is one published before week W's kickoff.
 **First live run (2026 week 9, local only, nothing published):** 529 players projected, all with a median, floor and ceiling. Nobody is excluded yet, because the week-9 injury report comes out Wednesday–Friday. Projections are saved next to the data pull they came from.
+
+### 2026-11-03: Roster data for live rows (Parv approved the download; rule fixed before building)
+**Source:** nflverse weekly rosters (`load_rosters_weekly`), one snapshot per team-week, plus for the live season the current season roster (`load_rosters`), saved inside the timestamped live pull. The frozen 2018–25 rosters are a **new** file, `data/raw/rosters_weekly.parquet`; no existing file changes.
+**Rule: a player's team for week W:**
+  - **Past seasons (checks and backtests):** his team on the **week-W roster**. Only the *team* field is used, which is public before kickoff (trades and signings are announced). The game-day status (e.g. INA = inactive, announced about 90 minutes before kickoff) is **not** used, because the live pipeline can't rely on getting it in time.
+  - **Live season:** the week-W roster isn't published until about game day (on Tuesday of week 9, the latest is week 8). So we use the **current season roster from our own timestamped pull**, which is pre-game by construction.
+  - If a player is missing from the roster, he falls back to his last game's team.
+**Who is a candidate:**
+  - **Included:** players on T's roster with a skill position, at least one earlier NFL game (the model needs history), and a game this season (any team) or, in Week 1, last season.
+  - **Excluded on pre-game status:** reserve lists (RES, e.g. injured reserve), practice squad (DEV), cut, retired. Each is a public transaction made before the game. Players designated **Out** are excluded as before.
+**Check:** re-run `check_live.py`. Same-team rows must still match exactly, wrong-team rows should fall to about 0, and Week 1 should no longer miss the offseason movers.
+
+### 2026-11-03: Rosters added: result
+**Re-check (`check_live.py`):**
+  - **Wrong-team rows: 0** (was 1 and 2).
+  - **Big-60 players missed in Week 1: 1** (was 6). The one left is Calvin Ridley, who didn't play in 2022 (suspension), so the "played last season" rule leaves him out. That is a disclosed limit, the same for the baseline.
+  - Same-team rows still match **exactly**: no look-ahead.
+  - Fewer candidates who then didn't play (e.g. 2021 wk 14: 203 → 80), because reserve and practice-squad players are now excluded before the game.
+**Live 2026 week 9 (new pull 2026-11-04 04:20 UTC):** 448 players projected (was 529 without rosters; the difference is reserve, practice-squad and cut players). The team comes from the current roster saved in that pull, since the week-9 weekly roster isn't published yet. The old 2026 pull folder (without rosters) is kept for the record but is no longer "complete", so it is never used.

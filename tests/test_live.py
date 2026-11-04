@@ -42,3 +42,22 @@ def test_out_designations():
                         "report_status": ["Out", "Questionable", np.nan]})
     assert out_designations(inj, 2026, 3)["player_id"].tolist() == ["p1"]
     assert out_designations(inj, 2026, 4).empty
+
+
+def test_roster_overrides_team_and_drops_reserve():
+    roster = pd.DataFrame({"player_id": ["stay", "traded", "signed"], "team": ["BBB", "AAA", "AAA"],
+                           "status": ["ACT", "RES", "ACT"]})
+    pg = _pg()
+    c = candidates(pg, _sch(), 2026, 3, roster).set_index("player_id")
+    assert c.loc["stay", "team"] == "BBB"          # roster move beats last-game team
+    assert "traded" not in c.index                 # on reserve → excluded
+    assert "signed" not in c.index                 # no game history → nothing to project from
+    assert "bye_team" not in c.index
+
+
+def test_roster_week1_offseason_mover():
+    pg = pd.DataFrame({"player_id": ["mover"], "player_display_name": ["mover"], "position": "WR",
+                       "team": ["CCC"], "season": 2025, "week": 18, "game_id": "x"})
+    roster = pd.DataFrame({"player_id": ["mover"], "team": ["AAA"], "status": ["ACT"]})
+    c = candidates(pg, _sch(2026, 1), 2026, 1, roster)
+    assert c["team"].tolist() == ["AAA"]           # offseason signing is placed on his new team

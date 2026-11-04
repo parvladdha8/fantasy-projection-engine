@@ -13,13 +13,13 @@ from fantasy_projection_engine.predict import predict
 
 season = int(sys.argv[1]) if len(sys.argv) > 1 else LIVE_SEASON
 pull = latest_live(season)
-games, week, excluded = live_games(season, pull=pull)
+games, week, excluded, src = live_games(season, pull=pull)
 pred = predict(games, allow_test=True)
 pred = pred[(pred.season == season) & (pred.week == week)].sort_values("median", ascending=False)
 out = pull / f"projections_week{week:02d}.parquet"
 pred.to_parquet(out)
 print(f"data pull: {pull.name}   week {week}: {len(pred)} players projected, {pred['median'].isna().sum()} without a projection, "
-      f"{len(excluded)} excluded (designated Out)")
+      f"{len(excluded)} excluded (designated Out); team from: {src}")
 print("saved to", out)
 for pos, n in [("QB", 5), ("RB", 5), ("WR", 5), ("TE", 5)]:
     print(f"\n{pos}:")

@@ -57,7 +57,13 @@ def grade(conn, season: int, pull, now: str | None = None) -> list[str]:
         act = actual_points(stats, f, season, w)
         ours = f[f["source"] == "ours"]
         weekly, positions = [], []
+        week_games = set(tab["schedules"].loc[(tab["schedules"]["season"] == season) & (tab["schedules"]["week"] == w) &
+                                              (tab["schedules"]["game_type"] == "REG"), "game_id"])
         for src in sorted(set(f["source"]) - {"ours"}):
+            missing = week_games - set(f.loc[f["source"] == src, "game_id"])
+            if missing:   # partial week: the platform's pool would be biased, so it is not graded (pre-registered)
+                out.append(f"week {w} vs {src}: NOT graded, {len(missing)} of {len(week_games)} games have no frozen {src} snapshot")
+                continue
             row, pos, _ = score_week(f[f["source"] == src], ours, act, inact["player_id"], platform=src)
             weekly.append(row)
             positions.append(pos)

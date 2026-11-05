@@ -23,6 +23,11 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: uv run python scripts/run_pipeline.py
+      - name: Sleeper snapshot (projections by RotoWire; stored privately, only error statistics are published)
+        if: always()
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: uv run python scripts/snapshot_sleeper.py
       - name: Weather forecasts (Open-Meteo; stored only, not used in projections)
         if: always()
         env:

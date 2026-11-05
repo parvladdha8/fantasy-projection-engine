@@ -39,8 +39,11 @@ CREATE TABLE IF NOT EXISTS consensus_snapshots (
     season            INTEGER NOT NULL,
     week              INTEGER NOT NULL,
     position          TEXT,
-    projected         DOUBLE PRECISION,
+    projected         DOUBLE PRECISION, -- rescored under the nflverse PPR rule (what is frozen and graded)
     captured_at       TEXT NOT NULL,
+    team              TEXT,
+    game_id           TEXT,            -- nflverse game id (team + week)
+    projected_platform DOUBLE PRECISION, -- the platform's own displayed points (its scoring), for transparency
     PRIMARY KEY (source, source_player_id, season, week, captured_at)
 );
 

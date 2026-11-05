@@ -732,3 +732,35 @@ Every fetch is kept (a new row each time, never overwritten), so a re-test can u
 - **Test fetch** (local file): one request, 15 week-9 games, all stored.
 - **Supabase:** table `weather_forecasts` added with RLS (public read-only), via `db/migrations/2026-11-05_weather.sql`.
 - **Live check of the alert:** the first test fetch failed because nflverse's server dropped the connection, and the report correctly blamed a temporary download failure. Weather now reuses the schedule the refresh has just downloaded, so it needs no second nflverse download.
+
+### 2026-11-05: Sleeper joins the Big 60 (Parv's decision; pre-registered before building)
+**Decision (Parv):**
+- Compare against Sleeper's weekly projections now, without waiting for a reply.
+- Publish **only error statistics** (weekly MAE/RMSE/Spearman, per-position MAE, W–L record), never Sleeper's projections themselves.
+- **Considered and rejected:** ESPN and FantasyPros. Their terms of use ban automated copying (ESPN: "copy or extract … using a robot, spider, script, or other automated means"; FantasyPros: no copying beyond "a single copy made for personal use"). Sleeper's API terms allow non-commercial use. Its projections endpoint is not in the public docs; this is disclosed on the site. The courtesy email still goes out, and if Sleeper objects we stop and say so publicly.
+
+**What the source actually is:** Sleeper's projections are supplied by **RotoWire** (the `company` field), so the label is "Sleeper (projections by RotoWire)".
+
+**Collection:**
+- One API call per refresh (daily, plus every 3 hours Thu–Sun): about 40 calls a week, far under Sleeper's 1,000 a minute.
+- Every snapshot is kept, timestamped, in `consensus_snapshots`. That table has **no public access**, and frozen Sleeper rows are hidden from the public API too (RLS: public sees only `ours`/`baseline` frozen rows).
+
+**Same scoring for every source (rigor rule 5):**
+- Sleeper's own points use its scoring (interception −1); ours and the actual points use nflverse's (interception −2, lost fumble −2; the formula reproduces every 2025 stat line exactly).
+- So **Sleeper's projected stat lines are rescored under the nflverse rule**, and that number is what is frozen and graded. Sleeper's own displayed number is stored alongside for transparency.
+- *Check on week 9:* rescoring Sleeper's stat lines with Sleeper's own rule reproduces their totals (95% within 0.02 pts, all within 0.07: rounding), so the stat fields are read correctly. Under our rule, their top-10 QBs move by −0.58 pts on average.
+
+**Matching:**
+- Sleeper player id → nflverse id via nflverse rosters' `sleeper_id`. All 90 of the top 90 week-9 players match.
+- Unmatched players are counted and published.
+- Teams map directly, except LAR → LA.
+
+**Freeze and grading:**
+- At kickoff, Sleeper's frozen projection is its latest snapshot **captured before kickoff**, with the same immutability and `recorded_at` rules as ours.
+- Pool = Sleeper's own top 10 QB / 20 RB / 20 WR / 10 TE by its (rescored) projection, after removing players inactive at kickoff (same inactive list as every source).
+- **A week is graded against Sleeper only if every game that week has a frozen Sleeper snapshot.** A partial week would bias the pool, so it is skipped and the skip is published.
+**Built and checked (2026-11-05):**
+- Local test: a real week-9 snapshot stored 381 Sleeper projections (3 not matched to an nflverse player) and froze for all 15 of 15 games.
+- Rescoring moved QBs by −0.69 pts on average and other positions by ≈ 0.
+- Supabase: `consensus_snapshots` gained `team`, `game_id`, `projected_platform` (`db/migrations/2026-11-05_sleeper.sql`); still no public policy.
+- The snapshot runs as a step after each refresh, before Thursday night's kickoff, so week 9 can be a full head-to-head.

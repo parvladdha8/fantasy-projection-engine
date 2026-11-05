@@ -175,3 +175,48 @@ def save_weather(conn, rows: pd.DataFrame) -> int:
                                          f"({', '.join('?' * len(WEATHER_COLS))})"), vals)
     conn.commit()
     return len(vals)
+
+
+SNAP_COLS = ["source", "source_player_id", "player_id", "season", "week", "position", "team", "game_id", "projected",
+             "projected_platform", "captured_at"]
+
+
+def save_snapshots(conn, rows: pd.DataFrame) -> int:
+    """Append one platform snapshot (every capture kept)."""
+    if rows.empty:
+        return 0
+    vals = [tuple(None if pd.isna(v) else (v.item() if hasattr(v, "item") else v) for v in r)
+            for r in rows[SNAP_COLS].itertuples(index=False)]
+    conn.cursor().executemany(_sql(conn, f"INSERT INTO consensus_snapshots ({', '.join(SNAP_COLS)}) VALUES "
+                                         f"({', '.join('?' * len(SNAP_COLS))})"), vals)
+    conn.commit()
+    return len(vals)
+
+
+def freeze_platform(conn, kickoffs: pd.DataFrame, source: str, now: str | None = None) -> int:
+    """Freeze a platform for every game that has kicked off and isn't frozen yet for it: each matched player's projection
+    from the platform's latest snapshot CAPTURED BEFORE that game's kickoff. Same immutability rules as ours."""
+    now = now or utc_now()
+    done = {r[0] for r in conn.execute(_sql(conn, "SELECT DISTINCT game_id FROM frozen_projections WHERE source = ?"), (source,))}
+    n = 0
+    for g in kickoffs.itertuples():
+        if g.kickoff > now or g.game_id in done:
+            continue
+        cur = conn.cursor()
+        cur.execute(_sql(conn, "SELECT MAX(captured_at) FROM consensus_snapshots WHERE source = ? AND game_id = ? AND captured_at < ?"),
+                    (source, g.game_id, g.kickoff))
+        cap = cur.fetchone()[0]
+        if cap is None:
+            continue
+        cur.execute(_sql(conn, "SELECT player_id, season, week, position, team, projected FROM consensus_snapshots "
+                               "WHERE source = ? AND game_id = ? AND captured_at = ? AND player_id IS NOT NULL AND projected IS NOT NULL"),
+                    (source, g.game_id, cap))
+        rows = list({r[0]: r for r in cur.fetchall()}.values())   # one row per player (two platform ids can map to one player)
+        conn.cursor().executemany(_sql(conn, "INSERT INTO frozen_projections (source, player_id, game_id, season, week, position, "
+                                             "team, projected, floor, ceiling, kickoff, frozen_at, origin, recorded_at) "
+                                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?)"),
+                                  [(source, r[0], g.game_id, int(r[1]), int(r[2]), r[3], r[4], float(r[5]), g.kickoff,
+                                    min(now, g.kickoff), cap, now) for r in rows])
+        n += len(rows)
+    conn.commit()
+    return n

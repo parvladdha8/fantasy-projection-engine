@@ -14,7 +14,8 @@ from fantasy_projection_engine import LIVE_SEASON
 from fantasy_projection_engine.alerts import write_failure
 from fantasy_projection_engine.data import PROJECT_ROOT
 from fantasy_projection_engine.live import kickoffs
-from fantasy_projection_engine.storage import connect_postgres, connect_sqlite, freeze_games, utc_now
+from fantasy_projection_engine.consensus import SOURCE as SLEEPER
+from fantasy_projection_engine.storage import connect_postgres, connect_sqlite, freeze_games, freeze_platform, utc_now
 
 
 def main(argv):
@@ -28,8 +29,9 @@ def main(argv):
     conn = connect_sqlite(PROJECT_ROOT / "db" / "local.sqlite") if local else connect_postgres()
     n = {src: freeze_games(conn, k[["game_id", "kickoff"]], now=now, source=src, column=col)
          for src, col in [("ours", "median"), ("baseline", "baseline")]}
+    n[SLEEPER] = freeze_platform(conn, k[["game_id", "kickoff"]], SLEEPER, now=now)
     started = k[k["kickoff"] <= now]
-    print(f"{now}: {len(started)} games kicked off in the last 14 days; newly frozen rows: ours {n['ours']}, baseline {n['baseline']}")
+    print(f"{now}: {len(started)} games kicked off in the last 14 days; newly frozen rows: ours {n['ours']}, baseline {n['baseline']}, {SLEEPER} {n[SLEEPER]}")
     conn.close()
 
 

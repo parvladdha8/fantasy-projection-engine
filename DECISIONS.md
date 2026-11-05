@@ -654,3 +654,12 @@ The steps add up exactly to the median (checked to 1e-15).
 
 **Next step, not in this one:** Tuesday scoring (actuals → Big 60 vs baseline), before week 9's games finish grading on Tue 2026-11-10.
 **Switch-on:** the workflows are tested by one manual run before the schedule is relied on.
+
+### 2026-11-04 (evening; 2026-11-05 UTC): Phase 4 schedule switched on
+- **Frozen data release** `frozen-data-v1` published by Parv (6 files + fingerprints, nflverse credited under CC BY 4.0). It was downloaded back and all 6 files match `data_manifest/frozen_raw.sha256`.
+- **Manual test runs on GitHub, both passed:**
+  - Refresh (run 41960929129): 448 week-9 players saved to Supabase and read back; it is the served run.
+  - Freeze (run 41961014698): 0 rows, correctly, since no game has kicked off since our first run.
+- **Same results on both computers:** GitHub's run moved 145 players by up to 0.99 pts versus the laptop run from earlier that day. Rerunning GitHub's *own* saved download on the laptop reproduced its projections to 1e-10, so the changes came from new data (Wednesday injury reports, line moves), not from different computation.
+- **Not exercised on GitHub:** the failure alert, since a test would open a real public issue. It is covered by local tests, including secret redaction.
+- **First real freeze expected:** week 9 Thursday game, kickoff 2026-11-06 01:15 UTC.

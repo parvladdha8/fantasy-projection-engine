@@ -65,6 +65,27 @@ CREATE TABLE IF NOT EXISTS frozen_projections (
     CHECK (frozen_at <= kickoff)
 );
 
+-- Weather forecasts for upcoming games (Open-Meteo, CC BY 4.0). Stored only; NOT used in projections.
+-- Every fetch is kept, so a re-test can use exactly the forecast that existed before kickoff.
+CREATE TABLE IF NOT EXISTS weather_forecasts (
+    game_id         TEXT NOT NULL,
+    fetched_at      TEXT NOT NULL,
+    kickoff         TEXT NOT NULL,
+    stadium_id      TEXT NOT NULL,
+    roof            TEXT,              -- as nflverse listed it at fetch time; NULL = retractable, not yet decided
+    latitude        DOUBLE PRECISION NOT NULL,
+    longitude       DOUBLE PRECISION NOT NULL,
+    temp_f          DOUBLE PRECISION,  -- game window = kickoff hour + 3 hours: means of temperature and wind,
+    wind_mph        DOUBLE PRECISION,  -- max gust and precipitation probability, totals of precipitation and snow
+    gust_mph        DOUBLE PRECISION,
+    precip_mm       DOUBLE PRECISION,
+    precip_prob     DOUBLE PRECISION,
+    snow_cm         DOUBLE PRECISION,
+    source          TEXT NOT NULL,
+    PRIMARY KEY (game_id, fetched_at),
+    CHECK (fetched_at < kickoff)
+);
+
 -- Actual PPR points after the games (re-ingested if the NFL issues a stat correction).
 CREATE TABLE IF NOT EXISTS actuals (
     player_id       TEXT NOT NULL,

@@ -23,6 +23,11 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: uv run python scripts/run_pipeline.py
+      - name: Weather forecasts (Open-Meteo; stored only, not used in projections)
+        if: always()
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: uv run python scripts/fetch_weather.py
       - name: Keep this run's 2026 download for 14 days (traceability)
         if: always()
         uses: actions/upload-artifact@v4

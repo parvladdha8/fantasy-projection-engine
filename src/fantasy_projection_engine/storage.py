@@ -159,3 +159,19 @@ def save_grading(conn, season: int, week: int, actuals: pd.DataFrame, inactive: 
     except Exception:
         conn.rollback()
         raise
+
+
+WEATHER_COLS = ["game_id", "fetched_at", "kickoff", "stadium_id", "roof", "latitude", "longitude", "temp_f", "wind_mph",
+                "gust_mph", "precip_mm", "precip_prob", "snow_cm", "source"]
+
+
+def save_weather(conn, rows: pd.DataFrame) -> int:
+    """Append one fetch's forecasts (never overwrites earlier fetches)."""
+    if rows.empty:
+        return 0
+    vals = [tuple(None if pd.isna(v) else (v.item() if hasattr(v, "item") else v) for v in r)
+            for r in rows[WEATHER_COLS].itertuples(index=False)]
+    conn.cursor().executemany(_sql(conn, f"INSERT INTO weather_forecasts ({', '.join(WEATHER_COLS)}) VALUES "
+                                         f"({', '.join('?' * len(WEATHER_COLS))})"), vals)
+    conn.commit()
+    return len(vals)

@@ -54,7 +54,7 @@ Written 2026-11-03. Nothing below has been installed, signed up for or downloade
    - `leaderboard`
 4. **Big 60 scoring:** score the frozen projections against actuals, each platform's own top-60 pool, MAE/RMSE/Spearman, weekly winner, running record. The inactive policy is applied identically to every source. Tests come first, using made-up data.
 5. **Connect Supabase** (after your accounts exist): write the tables and run one end-to-end dry run.
-6. **Weather forecasts** (stored for the future re-test of weather; **not** used in projections, since weather was rejected).
+6. **Weather forecasts**: DONE 2026-11-05 (stored for the future re-test of weather; **not** used in projections, since weather was rejected).
 7. **Consensus snapshots** (after decision 3).
 
 Phase 4 (GitHub Actions schedule, alerts) comes after this.

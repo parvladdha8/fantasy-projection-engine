@@ -27,3 +27,7 @@ CREATE POLICY public_read ON leaderboard_position FOR SELECT TO anon USING (true
 CREATE POLICY public_read_own ON frozen_projections FOR SELECT TO anon USING (source IN ('ours', 'baseline'));
 
 -- consensus_snapshots: no policy → not readable through the public API at all.
+
+-- Added 2026-11-05 (db/migrations/2026-11-05_weather.sql): weather forecasts, public read-only.
+ALTER TABLE weather_forecasts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY public_read ON weather_forecasts FOR SELECT TO anon USING (true);

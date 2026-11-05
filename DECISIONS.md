@@ -698,3 +698,37 @@ The steps add up exactly to the median (checked to 1e-15).
 - 32 projected players were inactive at kickoff: 29 listed INA (7 had been Questionable, e.g. A.J. Brown, Breece Hall; most others backup QBs) and 3 with no roster row (released).
 - 68 dressed but recorded nothing, so they scored 0.
 - One week is descriptive only, not evidence. It checks plumbing on real data.
+
+### 2026-11-05: Weather forecasts (stored only; pre-registered before building)
+**Purpose:**
+- Weather was **rejected** as a feature (v13, using nflverse's *game-day observed* weather), so forecasts are **not** used in projections.
+- They are stored so a future re-test can ask the question the live model actually faces: does a forecast *made before kickoff* help? Any such test must still earn its place on held-out data (rigor rule 3).
+
+**Source:**
+- Open-Meteo forecast API: free, non-commercial, no key, under 10,000 calls/day.
+- Data CC BY 4.0, so the site credits Open-Meteo.
+- One call per refresh covers every stadium (multi-location request): about 40 calls a week.
+
+**Stadium locations:**
+- A hand-entered table of latitude/longitude for every 2026 stadium (`weather.STADIUMS`, keyed by nflverse `stadium_id`).
+- Checked against two values Open-Meteo returns independently of us: **the time zone** (it must match the stadium's real time zone) and **the elevation** (e.g. Denver ≈ 1,600 m, Mexico City ≈ 2,200 m).
+- A game at a stadium missing from the table is logged and skipped, not a failure.
+
+**What is stored per game and fetch** (games kicking off in the next 7 days and not yet started):
+- the **game window**, kickoff hour through kickoff + 3 hours;
+- mean temperature (°F) and mean wind (mph);
+- max gust (mph), total precipitation (mm), max precipitation probability (%) and total snowfall (cm);
+- the roof as nflverse lists it at fetch time (`outdoors`, `dome`, or unknown for retractable roofs not yet decided), stored for every game;
+- the fetch time.
+
+Every fetch is kept (a new row each time, never overwritten), so a re-test can use exactly the forecast that existed at any moment before kickoff.
+
+**Pipeline:**
+- Runs as an extra step after each refresh.
+- If the weather fetch fails, the projections already saved are unaffected; the failure still opens an alert issue.
+- New table `weather_forecasts`, public read-only like the other public tables.
+**Built and checked (2026-11-05):**
+- **Stadium table:** all 33 stadiums pass the time-zone and elevation checks (`fetch_weather.py --check`). Examples: Denver 1,588 m, Mexico City 2,245 m, Madrid 716 m, Munich 491 m. The check catches gross errors (wrong city or a sign error), not small offsets, which barely matter for a weather forecast's grid.
+- **Test fetch** (local file): one request, 15 week-9 games, all stored.
+- **Supabase:** table `weather_forecasts` added with RLS (public read-only), via `db/migrations/2026-11-05_weather.sql`.
+- **Live check of the alert:** the first test fetch failed because nflverse's server dropped the connection, and the report correctly blamed a temporary download failure. Weather now reuses the schedule the refresh has just downloaded, so it needs no second nflverse download.

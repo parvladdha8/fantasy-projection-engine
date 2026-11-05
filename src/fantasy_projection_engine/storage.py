@@ -130,3 +130,32 @@ def freeze_games(conn, kickoffs: pd.DataFrame, now: str | None = None, source: s
         n += len(p)
     conn.commit()
     return n
+
+
+def save_grading(conn, season: int, week: int, actuals: pd.DataFrame, inactive: pd.DataFrame, weekly: list[dict],
+                 positions: pd.DataFrame, now: str | None = None):
+    """Replace one week's actuals, inactive log and leaderboard rows in a single transaction (re-scoring for stat
+    corrections overwrites the provisional result; nothing is half-written if it fails). Frozen projections are untouched."""
+    now = now or utc_now()
+    cur = conn.cursor()
+    try:
+        for t in ("actuals", "inactive_log", "leaderboard_weekly", "leaderboard_position"):
+            cur.execute(_sql(conn, f"DELETE FROM {t} WHERE season = ? AND week = ?"), (season, week))
+        cur.executemany(_sql(conn, "INSERT INTO actuals (player_id, game_id, season, week, points_ppr, ingested_at) VALUES (?, ?, ?, ?, ?, ?)"),
+                        [(r.player_id, r.game_id, season, week, float(r.points_ppr), now) for r in actuals.itertuples()])
+        cur.executemany(_sql(conn, "INSERT INTO inactive_log (player_id, game_id, season, week, reason, logged_at) VALUES (?, ?, ?, ?, ?, ?)"),
+                        [(r.player_id, r.game_id, season, week, r.reason, now) for r in inactive.itertuples()])
+        cols = ["platform", "n_pool", "n_scored", "n_dropped_no_ours", "n_inactive", "mae_ours", "mae_platform", "rmse_ours",
+                "rmse_platform", "spearman_ours", "spearman_platform", "winner"]
+        cur.executemany(_sql(conn, f"INSERT INTO leaderboard_weekly (season, week, {', '.join(cols)}, computed_at) "
+                                   f"VALUES (?, ?, {', '.join('?' * len(cols))}, ?)"),
+                        [(season, week, *[None if isinstance(w[c], float) and pd.isna(w[c]) else
+                                          (w[c].item() if hasattr(w[c], "item") else w[c]) for c in cols], now) for w in weekly])
+        cur.executemany(_sql(conn, "INSERT INTO leaderboard_position (platform, season, week, position, n, mae_ours, mae_platform) "
+                                   "VALUES (?, ?, ?, ?, ?, ?, ?)"),
+                        [(r.platform, season, week, r.position, int(r.n), float(r.mae_ours), float(r.mae_platform))
+                         for r in positions.itertuples()])
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise

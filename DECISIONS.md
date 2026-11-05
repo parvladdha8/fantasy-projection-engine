@@ -663,3 +663,38 @@ The steps add up exactly to the median (checked to 1e-15).
 - **Same results on both computers:** GitHub's run moved 145 players by up to 0.99 pts versus the laptop run from earlier that day. Rerunning GitHub's *own* saved download on the laptop reproduced its projections to 1e-10, so the changes came from new data (Wednesday injury reports, line moves), not from different computation.
 - **Not exercised on GitHub:** the failure alert, since a test would open a real public issue. It is covered by local tests, including secret redaction.
 - **First real freeze expected:** week 9 Thursday game, kickoff 2026-11-06 01:15 UTC.
+
+### 2026-11-05: Live grading (Big 60 scoring) (pre-registered before building)
+**Who was inactive at kickoff** (decided after the games, from nflverse; the same list applies to every source):
+1. **Active** if the player has a stat line *or* any offensive snap that week. This evidence overrides everything else.
+2. Otherwise **active** if his week-W roster status is `ACT` (dressed, did nothing): he scores **0**, as already pre-registered.
+3. Otherwise **inactive**: status `INA` (game-day inactive), `RES` (injured reserve), `DEV` (practice squad), cut, or no roster row that week. Logged with reason `designated_out` if he was Out on the final injury report, else `inactive_at_kickoff`.
+
+*Check on 2025:* not one INA player-week had a stat line or an offensive snap (0 of all INA rows). IR and practice-squad players had stat lines in ≤ 0.3% of rows, which rule 1 handles (practice-squad elevations).
+
+*Why roster status is fine here but not in projections:* game-day status is published about 90 minutes before kickoff, too late to rely on for projecting. Grading happens days later, when it is settled fact.
+
+**When a week is scored:**
+- Only when all of these hold:
+  - every regular-season game of the week is final;
+  - nflverse has stat lines for that week;
+  - the week-W roster covers every team that played.
+- Otherwise the run says "not ready" and tries again the next day (not a failure).
+
+**Actual points:** nflverse `fantasy_points_ppr`, stored for every player with a frozen projection that week.
+
+**Stat corrections:**
+- Results are **provisional for 10 days** after the week's last game. Each daily run re-ingests actual points and re-scores those weeks, since the NFL issues corrections during the following week.
+- After 10 days a week is **final** and never recomputed. Corrections apply equally to both sides.
+
+**Schedule:** `score.yml`, daily at 15:00 UTC (7 am PT). Week 9 becomes scoreable once Monday night's game is final, so the first live result should arrive on Tue 2026-11-10 or Wed 2026-11-11, depending on when nflverse posts the stats.
+
+**First platform:** the baseline (frozen from the same run as ours), as pre-registered.
+
+**Rehearsal before go-live:** rebuild 2026 week 8 as if it were upcoming, freeze it, and grade it with the real week-8 results, in a local SQLite file. Nothing is written to Supabase.
+**Rehearsal result (2026 week 8, local SQLite; `paper/rehearse_grading_week08.md`):**
+- 396 players projected as if upcoming (13 left out as designated Out).
+- Big 60 vs baseline: **ours 6.773 vs 6.871 MAE**, a win; all 60 scored.
+- 32 projected players were inactive at kickoff: 29 listed INA (7 had been Questionable, e.g. A.J. Brown, Breece Hall; most others backup QBs) and 3 with no roster row (released).
+- 68 dressed but recorded nothing, so they scored 0.
+- One week is descriptive only, not evidence. It checks plumbing on real data.

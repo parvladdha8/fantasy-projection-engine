@@ -1,0 +1,32 @@
+# Weekly grading: actual points → inactive log → Big 60 vs each frozen platform → leaderboard.
+# Daily, so results appear as soon as nflverse posts the week and stat corrections are picked up for 10 days.
+# Rules pre-registered in DECISIONS.md (2026-11-05, "Live grading").
+name: Grade the Big 60
+on:
+  schedule:
+    - cron: "0 15 * * *"          # daily, 7 am PT
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Python and locked packages
+        run: uv sync --frozen
+      - name: Grade every ready, not-yet-final week
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: uv run python scripts/score_live.py
+      - name: Report failure
+        if: failure()
+        uses: ./.github/actions/report-failure
+        with:
+          step: weekly grading

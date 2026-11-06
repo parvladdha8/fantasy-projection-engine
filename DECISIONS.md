@@ -764,3 +764,16 @@ Every fetch is kept (a new row each time, never overwritten), so a re-test can u
 - Rescoring moved QBs by −0.69 pts on average and other positions by ≈ 0.
 - Supabase: `consensus_snapshots` gained `team`, `game_id`, `projected_platform` (`db/migrations/2026-11-05_sleeper.sql`); still no public policy.
 - The snapshot runs as a step after each refresh, before Thursday night's kickoff, so week 9 can be a full head-to-head.
+
+### 2026-11-05: Website (Phase 5), first version
+- **Name:** FantasyQuant (Parv's choice).
+  - Parv's name and Instagram (@parv_laddha) appear **only** on the "The idea" page, at his request; not in the footer or title.
+- **Stack:** Next.js 16.4.2 (Node.js 24.22.1 LTS installed in the user folder, checksum-verified), Tailwind, hosted on Vercel (Hobby, non-commercial).
+- **Data access:** Supabase's public REST API with the **publishable** key. It was checked from the public's side: it can read the public tables, sees **0** Sleeper rows (snapshots and frozen), and a write attempt is refused (401).
+- **Pages:**
+  - Projections (floor/median/ceiling, filter, search);
+  - player breakdown (each explanation step in plain English, plus his graded track record);
+  - Big 60 scoreboard (only error statistics vs Sleeper/RotoWire and the baseline);
+  - The idea (stats and econometrics in plain English);
+  - Methodology (model, rules, 2024/2025 results, rejected features, limitations).
+- **Freshness:** data pages are cached for 1 minute.

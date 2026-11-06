@@ -1,0 +1,59 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: { default: "FantasyQuant: full-PPR projections, graded in public", template: "%s · FantasyQuant" },
+  description:
+    "Weekly full-PPR fantasy football projections with floor and ceiling, graded publicly every week against Sleeper and a simple average, including the weeks we lose.",
+};
+
+const NAV = [
+  { href: "/", label: "Projections" },
+  { href: "/big60", label: "Big 60 scoreboard" },
+  { href: "/idea", label: "The idea" },
+  { href: "/methodology", label: "Methodology" },
+];
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        <header className="border-b border-line">
+          <div className="mx-auto max-w-5xl px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+            <Link href="/" className="font-semibold tracking-tight text-lg">
+              Fantasy<span className="text-accent">Quant</span>
+            </Link>
+            <nav className="flex flex-wrap gap-1 text-sm">
+              {NAV.map((n) => (
+                <Link key={n.href} href={n.href} className="rounded-md px-3 py-1.5 hover:bg-muted">
+                  {n.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </header>
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+        <footer className="border-t border-line text-xs text-subtle">
+          <div className="mx-auto max-w-5xl px-4 py-6 space-y-2">
+            <p>
+              <span className="font-semibold text-foreground">FantasyQuant</span> · Non-commercial fantasy football
+              research. Every projection is locked at kickoff and graded after the games, including the weeks we lose.
+              Code, methodology and every result, including failures:{" "}
+              <a className="underline" href="https://github.com/parvladdha8/fantasy-projection-engine">GitHub</a>.
+            </p>
+            <p>
+              NFL data from <a className="underline" href="https://github.com/nflverse">nflverse</a> (CC BY 4.0).
+              Comparison projections from Sleeper (supplied by RotoWire); only our error statistics are shown, never
+              their projections. Not affiliated with the NFL, Sleeper or RotoWire.
+            </p>
+          </div>
+        </footer>
+      </body>
+    </html>
+  );
+}

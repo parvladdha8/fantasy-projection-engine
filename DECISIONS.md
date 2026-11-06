@@ -777,3 +777,5 @@ Every fetch is kept (a new row each time, never overwritten), so a re-test can u
   - The idea (stats and econometrics in plain English);
   - Methodology (model, rules, 2024/2025 results, rejected features, limitations).
 - **Freshness:** data pages are cached for 1 minute.
+- **Live at https://fantasyquant.vercel.app** (2026-11-05). Linked from the README and set as the GitHub project's homepage. The domain stays as is (Parv).
+- **Home page slimmed:** the browser now gets compact rows (1 decimal place), and the top 100 are shown first ("Show all" button; search always shows every match). Production page 486 KB → 115 KB; compressed download 60 KB → 18 KB.

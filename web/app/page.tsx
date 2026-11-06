@@ -1,5 +1,7 @@
 import { latestProjections, formatPT } from "@/lib/data";
-import ProjectionsTable from "./projections-table";
+import ProjectionsTable, { type Row } from "./projections-table";
+
+const r1 = (x: number) => Math.round(x * 10) / 10;
 
 export default async function Home() {
   const { run, rows } = await latestProjections();
@@ -24,7 +26,9 @@ export default async function Home() {
         )}
       </section>
       {rows.length ? (
-        <ProjectionsTable rows={rows.map((r) => ({ ...r, explanation: null, baseline: null }))} />
+        <ProjectionsTable
+          data={rows.map((r): Row => [r.player_id, r.player_name, r.position, r.team, r1(r.floor), r1(r.median), r1(r.ceiling)])}
+        />
       ) : (
         <p className="text-subtle">No projections published yet.</p>
       )}

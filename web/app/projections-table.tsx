@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { Projection } from "@/lib/data";
+
+// Compact row sent to the browser: [player_id, name, position, team, floor, median, ceiling] (numbers to 1 decimal).
+export type Row = [string, string, string, string, number, number, number];
 
 const POSITIONS = ["All", "QB", "RB", "WR", "TE"] as const;
 
-export default function ProjectionsTable({ rows }: { rows: Projection[] }) {
+export default function ProjectionsTable({ data }: { data: Row[] }) {
+  const rows = useMemo(() => data.map(([player_id, player_name, position, team, floor, median, ceiling]) =>
+    ({ player_id, player_name, position, team, floor, median, ceiling })), [data]);
   const [pos, setPos] = useState<(typeof POSITIONS)[number]>("All");
   const [q, setQ] = useState("");
+  const [all, setAll] = useState(false);
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return rows.filter(
@@ -17,6 +22,8 @@ export default function ProjectionsTable({ rows }: { rows: Projection[] }) {
     );
   }, [rows, pos, q]);
   const scaleMax = Math.max(...rows.map((r) => r.ceiling), 1);
+  const LIMIT = 100;
+  const visible = all || q.trim() ? shown : shown.slice(0, LIMIT);
 
   return (
     <div className="space-y-4">
@@ -45,8 +52,8 @@ export default function ProjectionsTable({ rows }: { rows: Projection[] }) {
             </tr>
           </thead>
           <tbody>
-            {shown.map((r, i) => (
-              <tr key={`${r.player_id}-${r.game_id}`} className="border-t border-line hover:bg-muted/60">
+            {visible.map((r, i) => (
+              <tr key={r.player_id} className="border-t border-line hover:bg-muted/60">
                 <td className="px-3 py-2 text-subtle num">{i + 1}</td>
                 <td className="px-3 py-2">
                   <Link href={`/player/${r.player_id}`} className="font-medium hover:underline">{r.player_name}</Link>
@@ -68,6 +75,11 @@ export default function ProjectionsTable({ rows }: { rows: Projection[] }) {
         </table>
         {shown.length === 0 && <p className="p-4 text-sm text-subtle">No players match.</p>}
       </div>
+      {visible.length < shown.length && (
+        <button onClick={() => setAll(true)} className="w-full rounded-lg border border-line py-2.5 text-sm hover:bg-muted">
+          Show all {shown.length} players
+        </button>
+      )}
     </div>
   );
 }

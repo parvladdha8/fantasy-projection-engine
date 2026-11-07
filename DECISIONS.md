@@ -784,3 +784,7 @@ Every fetch is kept (a new row each time, never overwritten), so a re-test can u
 - The look: a frosted sticky menu bar, the system font, a hero with three 2025-test numbers (each says it is vs our baseline), soft cards, and load/scroll animations. All motion is disabled for viewers who choose "Reduce motion". There are no new packages (CSS only).
 - The projections table shows **30 players per page** with Previous/Next (Parv), instead of one long list. Search and position filters return to page 1.
 - `paper/OUTLINE.md`: the first outline of the paper (sections, the source file for each number, the writing plan; every citation to be checked before use).
+- **More pre-kickoff refresh times** (2026-11-07). The first week showed GitHub's free scheduler *skips* runs when busy: 11 of about 100 freeze checks fired, and the last refresh before Thursday's kickoff was about 4 hours old. A late freeze is still correct by design, but stale projections miss late injury news (for every source alike, since all are frozen from pre-kickoff snapshots).
+  - Fix (free): several extra refresh times in the hour before each kickoff window (Sunday morning, 4 pm and night games; Monday and Thursday nights) at off-peak minutes, plus extra Sunday freeze checks.
+  - Outside trigger services were considered and deferred (another account, plus a GitHub token stored on a third-party site).
+  - Storage: about 0.3 MB per refresh, about 250 MB by season's end against the 500 MB free limit. A retention rule for 2027 is to be proposed before then.

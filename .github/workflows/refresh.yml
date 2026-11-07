@@ -5,6 +5,14 @@ on:
   schedule:
     - cron: "0 13 * * *"          # daily, 5 am PT
     - cron: "20 */3 * * 4,5,6,0"  # Thu–Sun every 3 hours (injury news moves fastest)
+    # Extra pre-kickoff runs (2026-11-07). GitHub skips scheduled runs when busy, so several chances per window,
+    # at off-peak minutes. Times UTC (ET = UTC − 5 in winter):
+    - cron: "13,43 15-17 * * 0"     # Sunday 10:13 am–12:43 pm ET, before the 1 pm games (and 9:30 am international games: 13:13 below)
+    - cron: "13 13-14 * * 0"        # Sunday 8:13 / 9:13 am ET
+    - cron: "13,43 20 * * 0"        # Sunday ~3:15–3:45 pm ET, before the 4:05 / 4:25 pm games
+    - cron: "13,43 0 * * 1"         # Sunday ~7:15–7:45 pm ET, before Sunday night (8:20 pm ET)
+    - cron: "13,43 0 * * 2"         # Monday ~7:15–7:45 pm ET, before Monday night (8:15 pm ET)
+    - cron: "13,43 0 * * 5"         # Thursday ~7:15–7:45 pm ET, before Thursday night (8:15 pm ET)
   workflow_dispatch: {}           # "Run workflow" button for manual runs
 permissions:
   contents: read

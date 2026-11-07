@@ -1,31 +1,38 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #14161a;
-  --muted: #f2f4f7;
-  --line: #e3e6eb;
-  --subtle: #5b6472;
-  --accent: #1f6feb;
-  --good: #1a7f37;
-  --bad: #c0392b;
+  --background: #fbfbfd;
+  --surface: #ffffff;
+  --foreground: #1d1d1f;
+  --muted: #f2f2f5;
+  --line: #e4e4e9;
+  --subtle: #6e6e73;
+  --accent: #0071e3;
+  --accent-2: #8e5cf7;
+  --good: #1f8a3b;
+  --bad: #d23b2f;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0d1117;
-    --foreground: #e6e8eb;
-    --muted: #161b22;
-    --line: #2a313c;
-    --subtle: #9aa4b2;
-    --accent: #58a6ff;
-    --good: #3fb950;
-    --bad: #f47067;
+    --background: #000000;
+    --surface: #111113;
+    --foreground: #f5f5f7;
+    --muted: #1c1c1f;
+    --line: #2c2c31;
+    --subtle: #a1a1a6;
+    --accent: #2997ff;
+    --accent-2: #a78bfa;
+    --good: #30d158;
+    --bad: #ff6961;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.5);
   }
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-line: var(--line);
@@ -33,14 +40,84 @@
   --color-accent: var(--accent);
   --color-good: var(--good);
   --color-bad: var(--bad);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", var(--font-geist-mono), monospace;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.025em;
 }
 
 .num {
   font-variant-numeric: tabular-nums;
+}
+
+/* Frosted glass, like Apple's navigation bar. */
+.glass {
+  background: color-mix(in srgb, var(--background) 72%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.gradient-text {
+  background: linear-gradient(100deg, var(--foreground) 20%, var(--accent) 60%, var(--accent-2) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Motion: content rises in on load; on browsers that support it, sections reveal as they scroll into view. */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.fade-up {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.16s; }
+.delay-3 { animation-delay: 0.24s; }
+.delay-4 { animation-delay: 0.32s; }
+
+.grow-x {
+  transform-origin: left center;
+  animation: grow-x 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: fade-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }

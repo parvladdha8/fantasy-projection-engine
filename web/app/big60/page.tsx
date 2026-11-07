@@ -16,8 +16,9 @@ export default async function Big60() {
   const platforms = [...new Set([...ORDER, ...weeks.map((w) => w.platform)])].filter((p) => weeks.some((w) => w.platform === p));
   return (
     <div className="space-y-8">
-      <section className="space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight">The Big 60 scoreboard</h1>
+      <section className="space-y-4 fade-up">
+        <p className="text-sm font-medium text-accent">Scoreboard</p>
+        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight"><span className="gradient-text">The Big 60</span>, every week.</h1>
         <div className="text-sm text-subtle max-w-3xl space-y-2">
           <p>
             Every week we go head-to-head with each source <em>on its own turf</em>: the 60 players <strong className="text-foreground">it</strong>{" "}
@@ -32,9 +33,9 @@ export default async function Big60() {
         </div>
       </section>
       {platforms.length === 0 ? (
-        <div className="rounded-lg border border-line p-6 text-sm">
-          <p className="font-medium">No graded weeks yet.</p>
-          <p className="text-subtle mt-1">
+        <div className="card p-8 text-center fade-up delay-2">
+          <p className="text-xl font-semibold tracking-tight">First results coming soon</p>
+          <p className="text-subtle mt-2 max-w-md mx-auto text-sm">
             The first live results (week 9 of 2026, against Sleeper and our simple-average baseline) appear once the
             NFL&apos;s week-9 stats are final, around Tuesday, Nov 10.
           </p>
@@ -43,7 +44,7 @@ export default async function Big60() {
         platforms.map((p) => <Platform key={p} platform={p} weeks={weeks.filter((w) => w.platform === p)}
           positions={positions.filter((x) => x.platform === p)} />)
       )}
-      <section className="rounded-lg bg-muted p-4 text-sm text-subtle max-w-3xl space-y-2">
+      <section className="reveal rounded-2xl bg-muted p-6 text-sm text-subtle max-w-3xl space-y-2">
         <p><strong className="text-foreground">Who are we comparing against?</strong></p>
         <p>
           <strong className="text-foreground">{PLATFORM_LABEL.sleeper}</strong>: Sleeper&apos;s public weekly
@@ -66,16 +67,16 @@ function Platform({ platform, weeks, positions }: { platform: string; weeks: Wee
   const thisSeason = weeks.filter((w) => w.season === season);
   const avg = (k: "mae_ours" | "mae_platform") => thisSeason.reduce((s, w) => s + w[k], 0) / thisSeason.length;
   return (
-    <section className="space-y-3">
+    <section className="reveal space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-lg font-semibold">vs {label}</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">vs {label}</h2>
         <p className="text-sm"><span className="text-subtle">{season} record: </span><span className="num font-semibold text-base">{record(thisSeason)}</span>
           <span className="text-subtle"> · season MAE </span><span className="num">{avg("mae_ours").toFixed(2)}</span>
           <span className="text-subtle"> vs </span><span className="num">{avg("mae_platform").toFixed(2)}</span></p>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-line">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-muted text-left text-xs uppercase tracking-wide text-subtle">
+          <thead className="text-left text-[11px] uppercase tracking-wider text-subtle border-b border-line">
             <tr>
               <th className="px-3 py-2">Week</th>
               <th className="px-3 py-2 text-right">Our MAE</th>

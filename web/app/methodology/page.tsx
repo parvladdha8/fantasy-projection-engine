@@ -14,17 +14,17 @@ const REJECTED = [
 
 export default function Methodology() {
   return (
-    <article className="max-w-3xl space-y-8 text-[15px] leading-relaxed">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Methodology</h1>
+    <article className="max-w-3xl space-y-12 text-[15px] leading-relaxed">
+      <header className="space-y-3 fade-up">
+        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight"><span className="gradient-text">Methodology</span></h1>
         <p className="text-subtle">
           How the projections are made, how we tested them, and what didn&apos;t work. Every number below is from a
           pre-registered test; the code and logs are public on GitHub.
         </p>
       </header>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">The model, step by step</h2>
+      <section className="reveal space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">The model, step by step</h2>
         <ol className="list-decimal pl-5 space-y-2">
           <li><strong>Baseline.</strong> A recency-weighted average of a player&apos;s past full-PPR points (each game&apos;s weight halves every 8 games). Everything else has to beat this.</li>
           <li><strong>Opportunity × efficiency.</strong> Points = opportunities (targets, carries, pass attempts) × points per opportunity. Both are estimated separately and <em>shrunk</em> toward league and long-run averages (empirical Bayes), so a few big games don&apos;t over-count.</li>
@@ -35,8 +35,8 @@ export default function Methodology() {
         </ol>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Rules we hold ourselves to</h2>
+      <section className="reveal space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">Rules we hold ourselves to</h2>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>No look-ahead.</strong> A projection for a week only uses information available before that week&apos;s kickoff. All backtests are walk-forward.</li>
           <li><strong>Earn every feature.</strong> An idea only enters the model if it lowers error on seasons it wasn&apos;t fitted on, with the test written down <em>before</em> running it.</li>
@@ -45,11 +45,11 @@ export default function Methodology() {
         </ul>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Results on held-out seasons (Big 60 vs the baseline)</h2>
-        <div className="overflow-x-auto rounded-lg border border-line">
+      <section className="reveal space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">Results on held-out seasons (Big 60 vs the baseline)</h2>
+        <div className="card overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-muted text-left text-xs uppercase tracking-wide text-subtle">
+            <thead className="text-left text-[11px] uppercase tracking-wider text-subtle border-b border-line">
               <tr><th className="px-3 py-2">Test</th><th className="px-3 py-2 text-right">Baseline MAE</th><th className="px-3 py-2 text-right">Model MAE</th><th className="px-3 py-2 text-right">p-value</th><th className="px-3 py-2 text-right">Weeks won</th></tr>
             </thead>
             <tbody>
@@ -65,18 +65,18 @@ export default function Methodology() {
         </p>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">What didn&apos;t work</h2>
+      <section className="reveal space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">What didn&apos;t work</h2>
         <p className="text-sm text-subtle">Tested properly and rejected. We keep these because a model that only reports its successes can&apos;t be trusted.</p>
-        <ul className="divide-y divide-line rounded-lg border border-line text-sm">
+        <ul className="divide-y divide-line card text-sm">
           {REJECTED.map(([idea, why]) => (
             <li key={idea} className="px-4 py-2.5"><span className="font-medium">{idea}</span><span className="text-subtle">: {why}</span></li>
           ))}
         </ul>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Known limitations</h2>
+      <section className="reveal space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">Known limitations</h2>
         <ul className="list-disc pl-5 space-y-1">
           <li>News that breaks minutes before kickoff may be missed. Those players are handled by the inactive rule in grading, the same for every source.</li>
           <li>Players with no NFL history (most rookies before their first game) get no projection. If one is in a platform&apos;s top 60, he is dropped from both sides and the count is published.</li>
@@ -85,8 +85,8 @@ export default function Methodology() {
         </ul>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Data</h2>
+      <section className="reveal space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">Data</h2>
         <p>
           Player stats, snap counts, schedules, betting lines, rosters and injury reports come from{" "}
           <a className="underline" href="https://github.com/nflverse">nflverse</a> (CC BY 4.0). Projections refresh

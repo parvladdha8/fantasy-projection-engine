@@ -25,6 +25,7 @@ async function Player({ id }: { id: string }) {
   const [{ rows }, hist] = await Promise.all([latestProjections(), playerHistory(id)]);
   const p = rows.find((r) => r.player_id === id);
   const steps = parseExplanation(p?.explanation ?? null);
+  const maxChange = Math.max(0.1, ...steps.filter((s) => s.kind === "change").map((s) => Math.abs(s.value)));
   const actual = new Map(hist.actuals.map((a) => [a.game_id, a.points_ppr]));
   const graded = hist.frozen.filter((f) => actual.has(f.game_id));
 
@@ -36,32 +37,41 @@ async function Player({ id }: { id: string }) {
       <Link href="/" className="text-sm text-subtle hover:underline">← All projections</Link>
       {p && (
         <section className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{p.player_name}</h1>
-            <p className="text-subtle">{p.position} · {p.team} · Week {p.week}</p>
+          <div className="fade-up">
+            <p className="text-sm font-medium text-accent">{p.position} · {p.team} · Week {p.week}</p>
+            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mt-1">{p.player_name}</h1>
           </div>
-          <div className="grid grid-cols-3 gap-3 max-w-md">
-            {[["Floor", p.floor], ["Median", p.median], ["Ceiling", p.ceiling]].map(([k, v]) => (
-              <div key={k as string} className="rounded-lg border border-line p-3 text-center">
-                <div className="text-xs uppercase tracking-wide text-subtle">{k}</div>
-                <div className={`num text-xl ${k === "Median" ? "font-semibold" : ""}`}>{(v as number).toFixed(1)}</div>
+          <div className="fade-up delay-1 grid grid-cols-3 gap-3 max-w-lg">
+            {[["Floor", p.floor, "a bad week"], ["Median", p.median, "our projection"], ["Ceiling", p.ceiling, "a great week"]].map(([k, v, note]) => (
+              <div key={k as string} className={`card p-4 text-center ${k === "Median" ? "ring-2 ring-accent/40" : ""}`}>
+                <div className="text-[11px] uppercase tracking-wider text-subtle">{k}</div>
+                <div className={`num text-3xl tracking-tight mt-1 ${k === "Median" ? "font-semibold" : ""}`}>{(v as number).toFixed(1)}</div>
+                <div className="text-[11px] text-subtle mt-0.5">{note}</div>
               </div>
             ))}
           </div>
         </section>
       )}
       {steps.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">How this projection was built</h2>
-          <ol className="divide-y divide-line rounded-lg border border-line">
+        <section className="fade-up delay-2 space-y-3">
+          <h2 className="text-2xl font-semibold tracking-tight">How this projection was built</h2>
+          <ol className="divide-y divide-line card overflow-hidden">
             {steps.map((s, i) => (
               <li key={i} className="flex items-start justify-between gap-4 px-4 py-3">
                 <div>
                   <div className={s.kind === "change" ? "" : "font-semibold"}>{s.kind === "end" ? "Median projection" : s.label}</div>
                   {PLAIN[s.label] && <div className="text-xs text-subtle mt-0.5 max-w-xl">{PLAIN[s.label]}</div>}
                 </div>
-                <div className={`num shrink-0 text-right ${s.kind === "change" ? (s.value > 0 ? "text-good" : s.value < 0 ? "text-bad" : "text-subtle") : "font-semibold"}`}>
-                  {s.kind === "change" ? `${s.value > 0 ? "+" : ""}${s.value.toFixed(1)}` : s.value.toFixed(1)}
+                <div className="flex shrink-0 items-center gap-3">
+                  {s.kind === "change" && (
+                    <div className="hidden sm:block h-1.5 w-24 rounded-full bg-muted overflow-hidden" aria-hidden>
+                      <div className={`grow-x h-full rounded-full ${s.value >= 0 ? "bg-good" : "bg-bad"}`}
+                        style={{ width: `${Math.min(100, (Math.abs(s.value) / maxChange) * 100)}%`, animationDelay: `${i * 60}ms` }} />
+                    </div>
+                  )}
+                  <div className={`num w-14 text-right ${s.kind === "change" ? (s.value > 0 ? "text-good" : s.value < 0 ? "text-bad" : "text-subtle") : "font-semibold text-lg"}`}>
+                    {s.kind === "change" ? `${s.value > 0 ? "+" : ""}${s.value.toFixed(1)}` : s.value.toFixed(1)}
+                  </div>
                 </div>
               </li>
             ))}
@@ -70,10 +80,10 @@ async function Player({ id }: { id: string }) {
       )}
       {graded.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Track record (projection locked at kickoff vs actual)</h2>
-          <div className="overflow-x-auto rounded-lg border border-line">
+          <h2 className="text-2xl font-semibold tracking-tight">Track record (projection locked at kickoff vs actual)</h2>
+          <div className="card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-muted text-left text-xs uppercase tracking-wide text-subtle">
+              <thead className="text-left text-[11px] uppercase tracking-wider text-subtle border-b border-line">
                 <tr><th className="px-3 py-2">Week</th><th className="px-3 py-2 text-right">Projected</th><th className="px-3 py-2 text-right">Actual</th><th className="px-3 py-2 text-right">Miss</th></tr>
               </thead>
               <tbody>

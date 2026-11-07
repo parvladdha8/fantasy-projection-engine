@@ -12,18 +12,18 @@ const DIFFERENT = [
 
 export default function Idea() {
   return (
-    <article className="max-w-3xl space-y-10 text-[15px] leading-relaxed">
-      <header className="space-y-3">
-        <p className="text-sm uppercase tracking-wide text-subtle">The idea</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Fantasy projections built like an economics paper</h1>
+    <article className="max-w-3xl space-y-14 text-[15px] leading-relaxed">
+      <header className="space-y-4 fade-up">
+        <p className="text-sm font-medium text-accent">The idea</p>
+        <h1 className="text-4xl sm:text-5xl font-semibold leading-[1.08] tracking-tight"><span className="gradient-text">Fantasy projections</span> built like an economics paper</h1>
         <p className="text-subtle">
           Most fantasy projections ask you to trust them. This project tries to earn it: every number comes from a
           model whose parts were tested on seasons it never saw, and the whole thing is graded in public every week.
         </p>
       </header>
 
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Why I built it</h2>
+      <section className="reveal space-y-3">
+        <h2 className="text-2xl font-semibold tracking-tight">Why I built it</h2>
         <p>
           A fantasy projection is a forecast, and forecasting is something economists have thought hard about: how
           to separate signal from noise, how to avoid fooling yourself, and how to prove a forecast is actually good.
@@ -33,11 +33,11 @@ export default function Idea() {
         </p>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">What&apos;s different here</h2>
+      <section className="reveal space-y-3">
+        <h2 className="text-2xl font-semibold tracking-tight">What&apos;s different here</h2>
         <ul className="grid gap-3 sm:grid-cols-2">
           {DIFFERENT.map(([t, d]) => (
-            <li key={t} className="rounded-lg border border-line p-4">
+            <li key={t} className="card p-5 transition-transform duration-300 hover:-translate-y-0.5">
               <div className="font-semibold">{t}</div>
               <p className="text-sm text-subtle mt-1">{d}</p>
             </li>
@@ -45,8 +45,8 @@ export default function Idea() {
         </ul>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">The statistics and econometrics, in plain English</h2>
+      <section className="reveal space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">The statistics and econometrics, in plain English</h2>
 
         <div className="space-y-2">
           <h3 className="font-semibold">1. Opportunity × efficiency</h3>
@@ -65,7 +65,7 @@ export default function Idea() {
             Small samples lie. The fix is to blend each player&apos;s own record with the league average for his
             position, trusting his record more the more evidence he has:
           </p>
-          <p className="rounded-lg bg-muted px-4 py-3 font-mono text-sm">
+          <p className="rounded-2xl bg-muted px-4 py-3 font-mono text-sm">
             efficiency = (his points + k × league rate) ÷ (his opportunities + k)
           </p>
           <p>
@@ -121,8 +121,8 @@ export default function Idea() {
         </div>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">What the model looks at</h2>
+      <section className="reveal space-y-3">
+        <h2 className="text-2xl font-semibold tracking-tight">What the model looks at</h2>
         <ul className="list-disc pl-5 space-y-1">
           <li>Snap counts, targets, carries and pass attempts, recency-weighted, with zero-snap games counted honestly</li>
           <li>Points per target, per carry and per pass attempt, shrunk toward the position&apos;s league rate</li>
@@ -136,8 +136,8 @@ export default function Idea() {
         </p>
       </section>
 
-      <section className="rounded-lg border border-line p-5 space-y-1">
-        <h2 className="text-lg font-semibold">Who&apos;s behind it</h2>
+      <section className="reveal card p-5 space-y-1">
+        <h2 className="text-2xl font-semibold tracking-tight">Who&apos;s behind it</h2>
         <p>
           Built by <strong>Parv Laddha</strong>, a student interested in economics and statistics. Questions or
           feedback: Instagram{" "}

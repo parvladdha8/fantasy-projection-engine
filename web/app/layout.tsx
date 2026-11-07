@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 const NAV = [
   { href: "/", label: "Projections" },
-  { href: "/big60", label: "Big 60 scoreboard" },
+  { href: "/big60", label: "Scoreboard" },
   { href: "/idea", label: "The idea" },
   { href: "/methodology", label: "Methodology" },
 ];
@@ -22,23 +22,24 @@ const NAV = [
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-background text-foreground">
-        <header className="border-b border-line">
-          <div className="mx-auto max-w-5xl px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-            <Link href="/" className="font-semibold tracking-tight text-lg">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-background text-foreground">
+        <header className="glass sticky top-0 z-50 border-b border-line/70">
+          <div className="mx-auto max-w-5xl px-4 h-12 flex items-center justify-between gap-3">
+            <Link href="/" className="font-semibold tracking-tight text-[17px]">
               Fantasy<span className="text-accent">Quant</span>
             </Link>
-            <nav className="flex flex-wrap gap-1 text-sm">
+            <nav className="flex gap-0.5 overflow-x-auto text-[13px] text-subtle -mr-2">
               {NAV.map((n) => (
-                <Link key={n.href} href={n.href} className="rounded-md px-3 py-1.5 hover:bg-muted">
+                <Link key={n.href} href={n.href}
+                  className="whitespace-nowrap rounded-full px-3 py-1.5 transition-colors hover:text-foreground hover:bg-muted">
                   {n.label}
                 </Link>
               ))}
             </nav>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
-        <footer className="border-t border-line text-xs text-subtle">
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:py-14">{children}</main>
+        <footer className="border-t border-line text-xs text-subtle bg-muted/40">
           <div className="mx-auto max-w-5xl px-4 py-6 space-y-2">
             <p>
               <span className="font-semibold text-foreground">FantasyQuant</span> · Non-commercial fantasy football

@@ -779,3 +779,8 @@ Every fetch is kept (a new row each time, never overwritten), so a re-test can u
 - **Freshness:** data pages are cached for 1 minute.
 - **Live at https://fantasyquant.vercel.app** (2026-11-05). Linked from the README and set as the GitHub project's homepage. The domain stays as is (Parv).
 - **Home page slimmed:** the browser now gets compact rows (1 decimal place), and the top 100 are shown first ("Show all" button; search always shows every match). Production page 486 KB → 115 KB; compressed download 60 KB → 18 KB.
+
+### 2026-11-07: Website redesign (Apple-style) and paging
+- The look: a frosted sticky menu bar, the system font, a hero with three 2025-test numbers (each says it is vs our baseline), soft cards, and load/scroll animations. All motion is disabled for viewers who choose "Reduce motion". There are no new packages (CSS only).
+- The projections table shows **30 players per page** with Previous/Next (Parv), instead of one long list. Search and position filters return to page 1.
+- `paper/OUTLINE.md`: the first outline of the paper (sections, the source file for each number, the writing plan; every citation to be checked before use).

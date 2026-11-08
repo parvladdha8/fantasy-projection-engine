@@ -4,9 +4,9 @@ export const metadata: Metadata = { title: "The idea" };
 
 const DIFFERENT = [
   ["A range, not just a number", "Every player gets a floor, median and ceiling. We check that the range is honest: in our 2025 test, 82.7% of outcomes landed inside the 10th–90th percentile band (target ≈ 80%)."],
-  ["You can see the working", "Each projection shows every step from the player's recent average to the final number, so you can disagree with a specific step instead of a black box."],
-  ["Graded in public, losses included", "Each week's projections are locked at kickoff and scored afterwards against the actual points, side by side with Sleeper's, on Sleeper's own top 60. A losing week is published like a winning one."],
-  ["Failed ideas are published too", "Prime-time games, weather, opponent strength and Week 1 effects all sound smart. We tested each one properly, none of them helped, so none of them are in the model, and we say so."],
+  ["Every step is shown", "Each projection shows every step from the player's recent average to the final number, so you can disagree with a specific step instead of a black box."],
+  ["Weekly accuracy scoreboard", "Each week's projections are locked at kickoff and compared with actual points, alongside Sleeper's projections for the same 60 players. Every week's result is posted, wins and losses."],
+  ["Only proven factors are used", "Factors such as prime-time games, weather, opponent strength and Week 1 effects were each tested on past seasons. None improved accuracy, so none are in the model. The full results are on the Methodology page."],
   ["Tests written before results", "Every idea's test and pass/fail rule were written down before it was run. That stops the most common trap in sports analytics: trying things until something looks good by luck."],
 ];
 
@@ -15,21 +15,20 @@ export default function Idea() {
     <article className="max-w-3xl space-y-14 text-[15px] leading-relaxed">
       <header className="space-y-4 fade-up">
         <p className="text-sm font-medium text-accent">The idea</p>
-        <h1 className="text-4xl sm:text-5xl font-semibold leading-[1.08] tracking-tight"><span className="gradient-text">Fantasy projections</span> built like an economics paper</h1>
+        <h1 className="text-4xl sm:text-5xl font-semibold leading-[1.08] tracking-tight"><span className="gradient-text">Economics-backed</span> fantasy projections</h1>
         <p className="text-subtle">
-          Most fantasy projections ask you to trust them. This project tries to earn it: every number comes from a
-          model whose parts were tested on seasons it never saw, and the whole thing is graded in public every week.
+          Most fantasy projections ask you to trust them. FantasyQuant aims to earn that trust: every number comes
+          from a tested statistical model, and its accuracy is measured and published every week.
         </p>
       </header>
 
       <section className="reveal space-y-3">
-        <h2 className="text-2xl font-semibold tracking-tight">Why I built it</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Our goal</h2>
         <p>
-          A fantasy projection is a forecast, and forecasting is something economists have thought hard about: how
-          to separate signal from noise, how to avoid fooling yourself, and how to prove a forecast is actually good.
-          I wanted to see what happens when you apply those habits to fantasy football: start from the simplest
-          sensible forecast, add an idea only if it beats that forecast on data it wasn&apos;t built on, and keep a
-          public scorecard.
+          A fantasy projection is a forecast, and economists have well-tested methods for building and evaluating
+          forecasts. FantasyQuant applies those methods to fantasy football: start from a simple, sensible forecast,
+          add a factor only if it improves accuracy on seasons the model wasn&apos;t built on, and track the results
+          on a public scoreboard.
         </p>
       </section>
 
@@ -137,10 +136,10 @@ export default function Idea() {
       </section>
 
       <section className="reveal card p-5 space-y-1">
-        <h2 className="text-2xl font-semibold tracking-tight">Who&apos;s behind it</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Questions or feedback</h2>
         <p>
-          Built by <strong>Parv Laddha</strong>, a student interested in economics and statistics. Questions or
-          feedback: Instagram{" "}
+          Built by <strong>Parv Laddha</strong>, a student interested in economics and statistics. Reach out on
+          Instagram{" "}
           <a className="underline" href="https://www.instagram.com/parv_laddha/">@parv_laddha</a>.
         </p>
       </section>

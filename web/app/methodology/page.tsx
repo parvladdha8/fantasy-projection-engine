@@ -40,7 +40,7 @@ export default function Methodology() {
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>No look-ahead.</strong> A projection for a week only uses information available before that week&apos;s kickoff. All backtests are walk-forward.</li>
           <li><strong>Earn every feature.</strong> An idea only enters the model if it lowers error on seasons it wasn&apos;t fitted on, with the test written down <em>before</em> running it.</li>
-          <li><strong>Holdout discipline.</strong> Developed on 2018–2023, validated once on 2024, final test once on 2025. Neither was used to tune.</li>
+          <li><strong>Holdout discipline.</strong> Developed on 2018–2023, validated once on 2024, final test once on 2025.</li>
           <li><strong>Significance, not just wins.</strong> Comparisons use a paired bootstrap on per-player errors, resampling whole weeks so that players in the same week aren&apos;t treated as independent.</li>
         </ul>
       </section>

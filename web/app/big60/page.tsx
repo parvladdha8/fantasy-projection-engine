@@ -28,7 +28,7 @@ export default async function Big60() {
           </p>
           <p>
             Players ruled inactive at kickoff are removed for every source alike. Results can change for 10 days after
-            a week because of NFL stat corrections. One week is noise; judge us on the season.
+            a week because of NFL stat corrections.
           </p>
         </div>
       </section>

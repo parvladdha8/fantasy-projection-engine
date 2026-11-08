@@ -22,7 +22,7 @@ export default async function Home() {
           <span className="gradient-text">Projections that grade themselves</span> in public.
         </h1>
         <p className="fade-up delay-2 text-lg sm:text-xl text-subtle max-w-2xl leading-relaxed">
-          Every player gets a floor, median and ceiling. Every number shows its working. Every week, our projections
+          Every player gets a floor, median and ceiling. Every number shows how it was calculated. Every week, our projections
           are locked at kickoff and scored against Sleeper&apos;s, including the weeks we lose.
         </p>
         <div className="fade-up delay-3 flex flex-wrap gap-3 pt-1">

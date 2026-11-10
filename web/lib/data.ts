@@ -13,6 +13,7 @@ export type WeekResult = {
   spearman_ours: number | null; spearman_platform: number | null; winner: "ours" | "platform" | "tie"; computed_at: string;
 };
 export type PositionResult = { platform: string; season: number; week: number; position: string; n: number; mae_ours: number; mae_platform: number };
+export type Highlight = { platform: string; season: number; week: number; kind: "win" | "loss"; rank: number; player_id: string; player_name: string; position: string };
 export type Frozen = { source: string; player_id: string; game_id: string; season: number; week: number; projected: number; kickoff: string };
 export type Actual = { player_id: string; game_id: string; season: number; week: number; points_ppr: number };
 
@@ -44,14 +45,20 @@ export async function playerHistory(playerId: string): Promise<{ frozen: Frozen[
   return { frozen, actuals };
 }
 
-export async function leaderboard(): Promise<{ weeks: WeekResult[]; positions: PositionResult[] }> {
+export async function leaderboard(): Promise<{ weeks: WeekResult[]; positions: PositionResult[]; highlights: Highlight[] }> {
   "use cache";
   cacheLife("minutes");
-  const [weeks, positions] = await Promise.all([
+  const [weeks, positions, highlights] = await Promise.all([
     query<WeekResult>("leaderboard_weekly?order=season.desc,week.desc&limit=500"),
     query<PositionResult>("leaderboard_position?order=season.desc,week.desc&limit=2000"),
+    query<Highlight>("leaderboard_highlights?order=season.desc,week.desc,rank.asc&limit=2000").catch(() => [] as Highlight[]),
   ]);
-  return { weeks, positions };
+  return { weeks, positions, highlights };
+}
+
+/** How much smaller our average miss was than theirs, as a percent of theirs (positive = we were more accurate). */
+export function accuracyEdge(maeOurs: number, maeTheirs: number): number {
+  return maeTheirs > 0 ? ((maeTheirs - maeOurs) / maeTheirs) * 100 : 0;
 }
 
 export const PLATFORM_LABEL: Record<string, string> = {

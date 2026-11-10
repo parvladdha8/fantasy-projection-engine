@@ -18,7 +18,7 @@ from fantasy_projection_engine import LIVE_SEASON
 from fantasy_projection_engine.alerts import write_failure
 from fantasy_projection_engine.data import latest_live, load_live, pull_live
 from fantasy_projection_engine.grading import actual_points, evidence_of_play, inactive_players, is_final, week_ready
-from fantasy_projection_engine.leaderboard import score_week, season_record
+from fantasy_projection_engine.leaderboard import highlights, score_week, season_record
 from fantasy_projection_engine.live import out_designations
 from fantasy_projection_engine.storage import _sql, connect_postgres, connect_sqlite, save_grading, utc_now
 
@@ -56,7 +56,8 @@ def grade(conn, season: int, pull, now: str | None = None) -> list[str]:
         inact = inact.merge(f[["player_id", "game_id"]].drop_duplicates("player_id"), on="player_id")
         act = actual_points(stats, f, season, w)
         ours = f[f["source"] == "ours"]
-        weekly, positions = [], []
+        weekly, positions, hl = [], [], []
+        names = tab["players"].drop_duplicates("gsis_id").set_index("gsis_id")["display_name"]
         week_games = set(tab["schedules"].loc[(tab["schedules"]["season"] == season) & (tab["schedules"]["week"] == w) &
                                               (tab["schedules"]["game_type"] == "REG"), "game_id"])
         for src in sorted(set(f["source"]) - {"ours"}):
@@ -64,13 +65,16 @@ def grade(conn, season: int, pull, now: str | None = None) -> list[str]:
             if missing:   # partial week: the platform's pool would be biased, so it is not graded (pre-registered)
                 out.append(f"week {w} vs {src}: NOT graded, {len(missing)} of {len(week_games)} games have no frozen {src} snapshot")
                 continue
-            row, pos, _ = score_week(f[f["source"] == src], ours, act, inact["player_id"], platform=src)
+            row, pos, scored = score_week(f[f["source"] == src], ours, act, inact["player_id"], platform=src)
             weekly.append(row)
             positions.append(pos)
+            h = highlights(scored, src)
+            hl.append(h.assign(player_name=h["player_id"].map(names).fillna(h["player_id"])))
         if not weekly:
             out.append(f"week {w}: no platform frozen yet; nothing to score")
             continue
-        save_grading(conn, season, w, act, inact, weekly, pd.concat(positions, ignore_index=True), now=now)
+        save_grading(conn, season, w, act, inact, weekly, pd.concat(positions, ignore_index=True), now=now,
+                     highlights=pd.concat(hl, ignore_index=True))
         status = "final" if is_final(tab["schedules"], season, w, now) else "provisional (re-scored daily for stat corrections)"
         for r in weekly:
             out.append(f"week {w} vs {r['platform']}: MAE ours {r['mae_ours']:.3f} vs {r['mae_platform']:.3f} → {r['winner']}; "

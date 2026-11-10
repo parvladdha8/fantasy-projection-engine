@@ -54,3 +54,14 @@ def test_tie_and_running_record():
     weekly = pd.DataFrame({"platform": "baseline", "season": 2026, "week": [1, 2, 3, 4],
                            "winner": ["ours", "platform", "tie", "ours"]})
     assert season_record(weekly)["record"].tolist() == ["1–0", "1–1", "1–1–1", "2–1–1"]
+
+
+def test_highlights_names_only_ranked_by_margin():
+    from fantasy_projection_engine.leaderboard import highlights
+    t = pd.DataFrame({"player_id": ["a", "b", "c", "d"], "position": ["QB", "RB", "WR", "TE"],
+                      "err_ours": [1.0, 2.0, 9.0, 4.0], "err_theirs": [8.0, 3.0, 2.0, 4.0]})
+    h = highlights(t, "sleeper", n=5)
+    assert list(h.columns) == ["platform", "kind", "rank", "player_id", "position"]   # no errors, no projections
+    assert h[h.kind == "win"].player_id.tolist() == ["a", "b"]    # a: 7 pts closer, b: 1 pt closer
+    assert h[h.kind == "loss"].player_id.tolist() == ["c"]        # c: 7 pts further; d tied → neither
+    assert h[h.kind == "win"]["rank"].tolist() == [1, 2]

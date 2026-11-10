@@ -53,6 +53,19 @@ def score_week(platform_frozen: pd.DataFrame, ours_frozen: pd.DataFrame, actuals
     return week, pos, t
 
 
+def highlights(scored: pd.DataFrame, platform: str, n: int = 5) -> pd.DataFrame:
+    """The week's biggest wins and losses vs a platform, by how much closer one side was to the actual points
+    (margin = their miss − our miss). Returns NAMES ONLY (player_id, position, rank): no errors or projections are
+    stored, so the platform's projections can't be reconstructed from the public site (DECISIONS.md 2026-11-10).
+    Players where both sides missed by the same amount are neither a win nor a loss."""
+    m = scored.assign(margin=scored["err_theirs"] - scored["err_ours"])
+    wins = m[m["margin"] > 0].sort_values(["margin", "player_id"], ascending=[False, True]).head(n).assign(kind="win")
+    losses = m[m["margin"] < 0].sort_values(["margin", "player_id"], ascending=[True, True]).head(n).assign(kind="loss")
+    out = pd.concat([wins, losses], ignore_index=True)
+    out["rank"] = out.groupby("kind").cumcount() + 1
+    return out.assign(platform=platform)[["platform", "kind", "rank", "player_id", "position"]]
+
+
 def season_record(weekly: pd.DataFrame) -> pd.DataFrame:
     """Running W–L–T per platform from weekly rows (winner column), in week order."""
     w = weekly.sort_values(["platform", "season", "week"]).copy()

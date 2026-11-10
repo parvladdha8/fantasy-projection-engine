@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { leaderboard, PLATFORM_LABEL, type WeekResult, type PositionResult } from "@/lib/data";
+import Link from "next/link";
+import { leaderboard, accuracyEdge, PLATFORM_LABEL, type WeekResult, type PositionResult, type Highlight } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Big 60 scoreboard: FantasyQuant vs Sleeper",
@@ -16,7 +17,7 @@ function record(weeks: WeekResult[]) {
 }
 
 export default async function Big60() {
-  const { weeks, positions } = await leaderboard();
+  const { weeks, positions, highlights } = await leaderboard();
   const platforms = [...new Set([...ORDER, ...weeks.map((w) => w.platform)])].filter((p) => weeks.some((w) => w.platform === p));
   return (
     <div className="space-y-8">
@@ -28,7 +29,14 @@ export default async function Big60() {
             Every week we go head-to-head with each source <em>on its own turf</em>: the 60 players <strong className="text-foreground">it</strong>{" "}
             ranks highest before kickoff (top 10 QB, 20 RB, 20 WR, 10 TE). Both sides&apos; projections are locked at
             each game&apos;s kickoff. After the games, the side whose projections were closer to the actual full-PPR
-            points (lower average miss, MAE) wins the week. We publish every week, including the ones we lose.
+            points wins the week. We publish every week, including the ones we lose.
+          </p>
+          <p>
+            <strong className="text-foreground">How to read it:</strong> the <strong className="text-foreground">average miss</strong> is
+            how many fantasy points a projection was off by, on average, across the 60 players (statisticians call
+            this MAE). If a player was projected for 15 and scored 20, that projection missed by 5. Lower is better.{" "}
+            <strong className="text-foreground">&quot;% more accurate&quot;</strong> compares the two average misses: missing by 6.2 points instead of
+            6.5 makes us 4% more accurate that week.
           </p>
           <p>
             Players ruled inactive at kickoff are removed for every source alike. Results can change for 10 days after
@@ -46,7 +54,8 @@ export default async function Big60() {
         </div>
       ) : (
         platforms.map((p) => <Platform key={p} platform={p} weeks={weeks.filter((w) => w.platform === p)}
-          positions={positions.filter((x) => x.platform === p)} />)
+          positions={positions.filter((x) => x.platform === p)}
+          highlights={p === "sleeper" ? highlights.filter((h) => h.platform === p) : []} />)
       )}
       <section className="reveal rounded-2xl bg-muted p-6 text-sm text-subtle max-w-3xl space-y-2">
         <p><strong className="text-foreground">Who are we comparing against?</strong></p>
@@ -65,27 +74,47 @@ export default async function Big60() {
   );
 }
 
-function Platform({ platform, weeks, positions }: { platform: string; weeks: WeekResult[]; positions: PositionResult[] }) {
+function Edge({ value }: { value: number }) {
+  const r = Math.round(Math.abs(value) * 10) / 10;
+  if (r === 0) return <span className="text-subtle">Even</span>;
+  return value > 0
+    ? <span className="text-good">{r}% more accurate</span>
+    : <span className="text-bad">{r}% less accurate</span>;
+}
+
+function Platform({ platform, weeks, positions, highlights }: { platform: string; weeks: WeekResult[]; positions: PositionResult[]; highlights: Highlight[] }) {
   const label = PLATFORM_LABEL[platform] ?? platform;
   const season = weeks[0].season;
   const thisSeason = weeks.filter((w) => w.season === season);
   const avg = (k: "mae_ours" | "mae_platform") => thisSeason.reduce((s, w) => s + w[k], 0) / thisSeason.length;
+  const seasonEdge = accuracyEdge(avg("mae_ours"), avg("mae_platform"));
+  const hlWeeks = [...new Set(highlights.map((h) => `${h.season}-${h.week}`))];
   return (
     <section className="reveal space-y-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-2xl font-semibold tracking-tight">vs {label}</h2>
-        <p className="text-sm"><span className="text-subtle">{season} record: </span><span className="num font-semibold text-base">{record(thisSeason)}</span>
-          <span className="text-subtle"> · season MAE </span><span className="num">{avg("mae_ours").toFixed(2)}</span>
-          <span className="text-subtle"> vs </span><span className="num">{avg("mae_platform").toFixed(2)}</span></p>
-      </div>
+      <h2 className="text-2xl font-semibold tracking-tight">vs {label}</h2>
+      <dl className="grid gap-3 grid-cols-3">
+        <div className="card p-4">
+          <dt className="text-[12px] text-subtle">{season} record (weeks won–lost)</dt>
+          <dd className="num text-2xl sm:text-3xl font-semibold tracking-tight mt-1">{record(thisSeason)}</dd>
+        </div>
+        <div className="card p-4">
+          <dt className="text-[12px] text-subtle">Accuracy this season</dt>
+          <dd className="text-lg sm:text-2xl font-semibold tracking-tight mt-1"><Edge value={seasonEdge} /></dd>
+        </div>
+        <div className="card p-4">
+          <dt className="text-[12px] text-subtle">Average miss (ours vs theirs)</dt>
+          <dd className="num text-lg sm:text-2xl font-semibold tracking-tight mt-1">{avg("mae_ours").toFixed(2)} <span className="text-subtle font-normal text-base">vs {avg("mae_platform").toFixed(2)} pts</span></dd>
+        </div>
+      </dl>
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-[11px] uppercase tracking-wider text-subtle border-b border-line">
             <tr>
               <th className="px-3 py-2">Week</th>
-              <th className="px-3 py-2 text-right">Our MAE</th>
-              <th className="px-3 py-2 text-right">Their MAE</th>
+              <th className="px-3 py-2 text-right" title="Average miss in fantasy points (MAE)">Our avg miss</th>
+              <th className="px-3 py-2 text-right" title="Average miss in fantasy points (MAE)">Their avg miss</th>
               <th className="px-3 py-2">Winner</th>
+              <th className="px-3 py-2">Accuracy</th>
               <th className="px-3 py-2 text-right hidden sm:table-cell" title="Rank correlation with actual points (higher is better)">Spearman (ours / theirs)</th>
               <th className="px-3 py-2 text-right hidden md:table-cell">QB / RB / WR / TE (ours − theirs)</th>
               <th className="px-3 py-2 text-right hidden md:table-cell" title="Scored players; players removed as inactive; pool players we had no projection for">Scored · inactive · no proj.</th>
@@ -102,6 +131,7 @@ function Platform({ platform, weeks, positions }: { platform: string; weeks: Wee
                   <td className={`px-3 py-2 ${w.winner === "ours" ? "text-good" : w.winner === "platform" ? "text-bad" : "text-subtle"}`}>
                     {w.winner === "ours" ? "Us" : w.winner === "platform" ? "Them" : "Tie"}
                   </td>
+                  <td className="px-3 py-2 whitespace-nowrap"><Edge value={accuracyEdge(w.mae_ours, w.mae_platform)} /></td>
                   <td className="px-3 py-2 text-right num hidden sm:table-cell text-subtle">
                     {w.spearman_ours?.toFixed(2) ?? "–"} / {w.spearman_platform?.toFixed(2) ?? "–"}
                   </td>
@@ -115,7 +145,36 @@ function Platform({ platform, weeks, positions }: { platform: string; weeks: Wee
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-subtle">MAE = average absolute miss in fantasy points over the scored pool (lower is better). Position columns: negative = we missed by less.</p>
+      <p className="text-xs text-subtle">Average miss = how many fantasy points a projection was off by, on average (MAE; lower is better). Position columns: negative = we missed by less.</p>
+      {hlWeeks.map((key, i) => {
+        const hs = highlights.filter((h) => `${h.season}-${h.week}` === key);
+        const [s, wk] = key.split("-");
+        return (
+          <details key={key} open={i === 0} className="card p-5 group">
+            <summary className="cursor-pointer list-none font-semibold flex items-center justify-between">
+              <span>Week {wk} biggest wins and losses{s !== String(season) ? ` (${s})` : ""}</span>
+              <span aria-hidden className="text-subtle transition-transform group-open:rotate-45">+</span>
+            </summary>
+            <p className="text-xs text-subtle mt-1">Biggest wins: players where our projection beat {label.split(" (")[0]}&apos;s by the most. Biggest losses: where theirs beat ours by the most. Names only; we never publish their projections.</p>
+            <div className="grid gap-4 sm:grid-cols-2 mt-4">
+              {(["win", "loss"] as const).map((kind) => (
+                <div key={kind}>
+                  <h3 className={`text-sm font-semibold ${kind === "win" ? "text-good" : "text-bad"}`}>{kind === "win" ? "Biggest wins" : "Biggest losses"}</h3>
+                  <ol className="mt-2 space-y-1 text-sm">
+                    {hs.filter((h) => h.kind === kind).map((h) => (
+                      <li key={h.rank} className="flex gap-2">
+                        <span className="num text-subtle w-4">{h.rank}.</span>
+                        <Link href={`/player/${encodeURIComponent(h.player_id)}`} className="hover:underline">{h.player_name}</Link>
+                        <span className="text-subtle">{h.position}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </div>
+          </details>
+        );
+      })}
     </section>
   );
 }

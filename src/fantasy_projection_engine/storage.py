@@ -133,13 +133,13 @@ def freeze_games(conn, kickoffs: pd.DataFrame, now: str | None = None, source: s
 
 
 def save_grading(conn, season: int, week: int, actuals: pd.DataFrame, inactive: pd.DataFrame, weekly: list[dict],
-                 positions: pd.DataFrame, now: str | None = None):
+                 positions: pd.DataFrame, now: str | None = None, highlights: pd.DataFrame | None = None):
     """Replace one week's actuals, inactive log and leaderboard rows in a single transaction (re-scoring for stat
     corrections overwrites the provisional result; nothing is half-written if it fails). Frozen projections are untouched."""
     now = now or utc_now()
     cur = conn.cursor()
     try:
-        for t in ("actuals", "inactive_log", "leaderboard_weekly", "leaderboard_position"):
+        for t in ("actuals", "inactive_log", "leaderboard_weekly", "leaderboard_position", "leaderboard_highlights"):
             cur.execute(_sql(conn, f"DELETE FROM {t} WHERE season = ? AND week = ?"), (season, week))
         cur.executemany(_sql(conn, "INSERT INTO actuals (player_id, game_id, season, week, points_ppr, ingested_at) VALUES (?, ?, ?, ?, ?, ?)"),
                         [(r.player_id, r.game_id, season, week, float(r.points_ppr), now) for r in actuals.itertuples()])
@@ -155,6 +155,11 @@ def save_grading(conn, season: int, week: int, actuals: pd.DataFrame, inactive: 
                                    "VALUES (?, ?, ?, ?, ?, ?, ?)"),
                         [(r.platform, season, week, r.position, int(r.n), float(r.mae_ours), float(r.mae_platform))
                          for r in positions.itertuples()])
+        if highlights is not None and len(highlights):
+            cur.executemany(_sql(conn, "INSERT INTO leaderboard_highlights (platform, season, week, kind, rank, player_id, player_name, position) "
+                                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"),
+                            [(r.platform, season, week, r.kind, int(r.rank), r.player_id, r.player_name, r.position)
+                             for r in highlights.itertuples()])
         conn.commit()
     except Exception:
         conn.rollback()

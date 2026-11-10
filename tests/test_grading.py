@@ -57,3 +57,19 @@ def test_rescoring_replaces_provisional_result():
     assert c.execute("SELECT points_ppr FROM actuals WHERE player_id = 'p1'").fetchone()[0] == 22.0
     lb = c.execute("SELECT mae_ours, mae_platform, winner FROM leaderboard_weekly").fetchall()
     assert lb == [(5.0, 3.5, "platform")]   # ours |18−22|,|16−10| → 5.0; baseline |20−22|,|15−10| → 3.5
+
+
+def test_highlights_saved_and_replaced_on_rescore():
+    from fantasy_projection_engine.leaderboard import highlights
+    c = connect_sqlite()
+    frozen = pd.DataFrame({"player_id": ["p1", "p2"], "game_id": "G", "position": "QB", "projected": [20.0, 15.0]})
+    ours = frozen.assign(projected=[18.0, 16.0])
+    stats = pd.DataFrame({"season": 2026, "week": 9, "player_id": ["p1", "p2"], "fantasy_points_ppr": [18.0, 10.0]})
+    act = actual_points(stats, frozen, 2026, 9)
+    w, pos, scored = score_week(frozen, ours, act, platform="sleeper")
+    h = highlights(scored, "sleeper").assign(player_name=["One", "Two"])
+    for _ in range(2):   # re-scoring must not duplicate rows
+        save_grading(c, 2026, 9, act, pd.DataFrame(columns=["player_id", "game_id", "reason"]), [w], pos,
+                     now="2026-11-10T15:00:00Z", highlights=h)
+    rows = c.execute("SELECT kind, rank, player_name FROM leaderboard_highlights ORDER BY kind").fetchall()
+    assert rows == [("loss", 1, "Two"), ("win", 1, "One")]   # p1: ours 0 vs theirs 2 → win; p2: 6 vs 5 → loss

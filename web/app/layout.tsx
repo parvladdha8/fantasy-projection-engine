@@ -3,14 +3,34 @@ import Link from "next/link";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SITE_URL, SITE_NAME, TAGLINE, SITE_DESCRIPTION, jsonLd } from "@/lib/site";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "FantasyQuant: full-PPR projections, graded in public", template: "%s · FantasyQuant" },
-  description:
-    "Weekly full-PPR fantasy football projections with floor and ceiling, graded publicly every week against Sleeper and a simple average, including the weeks we lose.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME} | ${TAGLINE}`, template: `%s · ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: ["fantasy football projections", "PPR projections", "weekly fantasy rankings", "floor and ceiling",
+    "fantasy football accuracy", "start sit", "FantasyQuant"],
+  authors: [{ name: "Parv Laddha" }],
+  openGraph: { type: "website", siteName: SITE_NAME, url: SITE_URL, title: `${SITE_NAME} | ${TAGLINE}`, description: SITE_DESCRIPTION },
+  twitter: { card: "summary", title: `${SITE_NAME} | ${TAGLINE}`, description: SITE_DESCRIPTION },
+  robots: { index: true, follow: true },
+};
+
+// Who publishes the site and what it is, in schema.org terms (read by search engines and AI assistants).
+const SITE_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "WebSite", "@id": `${SITE_URL}/#website`, url: SITE_URL, name: SITE_NAME, description: SITE_DESCRIPTION,
+      publisher: { "@id": `${SITE_URL}/#org` }, inLanguage: "en-US" },
+    { "@type": "Organization", "@id": `${SITE_URL}/#org`, name: SITE_NAME, url: SITE_URL, slogan: TAGLINE,
+      founder: { "@type": "Person", name: "Parv Laddha" },
+      sameAs: ["https://github.com/parvladdha8/fantasy-projection-engine", "https://www.instagram.com/parv_laddha/"] },
+  ],
 };
 
 const NAV = [
@@ -57,6 +77,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </footer>
         {/* Vercel Web Analytics: cookie-free visitor counts (enable in Vercel dashboard → Analytics) */}
         <Script src="/_vercel/insights/script.js" strategy="afterInteractive" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(SITE_LD) }} />
       </body>
     </html>
   );

@@ -1,0 +1,24 @@
+# FantasyQuant
+
+> FantasyQuant (https://www.fantasyquant.app) publishes free weekly full-PPR fantasy football projections for QBs, RBs, WRs and TEs, with a floor (10th percentile), median and ceiling (90th percentile) for every player. Projections are built with economics and statistics methods, locked at each game's kickoff, and graded publicly every week against Sleeper's projections on the "Big 60" scoreboard.
+
+Key facts:
+- Scoring: full PPR (1 per reception, 0.1 per rushing/receiving yard, 6 per rushing/receiving TD, 0.04 per passing yard, 4 per passing TD, 2 per two-point conversion, −2 per interception or fumble lost).
+- Accuracy: on the held-out 2025 season (never used to build or tune the model), average miss was 6.30 fantasy points per top player vs 6.59 for a recency-weighted average of past points: 4.5% less error, p < 0.001 (paired bootstrap over weeks), 16 of 18 weeks won. 2024 validation: 6.35 vs 6.51, 15 of 18 weeks won.
+- Calibration: 82.7% of 2025 outcomes landed between floor and ceiling (target 80%).
+- Method: opportunity (targets, carries, pass attempts) × efficiency (points per opportunity), both shrunk toward league averages with empirical Bayes; team implied points from betting lines; median correction via least absolute deviations; floor and ceiling via quantile regression.
+- Tested and rejected (no out-of-sample gain): prime-time games, weather, opponent strength vs position, Week 1 effects, week-of-season trends, vacated-opportunity redistribution.
+- Updates: every morning, and every 3 hours Thursday–Sunday during the NFL season. Players ruled Out are removed.
+- Free, non-commercial, no sign-up. Built by Parv Laddha. Data from nflverse (CC BY 4.0). Not affiliated with the NFL, Sleeper or RotoWire.
+
+## Pages
+
+- [Weekly projections](https://www.fantasyquant.app/): this week's floor, median and ceiling for every player, plus FAQ
+- [Big 60 scoreboard](https://www.fantasyquant.app/big60): weekly accuracy results vs Sleeper's projections, wins and losses
+- [How it works](https://www.fantasyquant.app/idea): the statistics and econometrics in plain English
+- [Methodology and results](https://www.fantasyquant.app/methodology): model steps, testing rules, held-out results, failed ideas, limitations
+- Player pages: https://www.fantasyquant.app/player/{id}, each showing the step-by-step build of that player's projection
+
+## Source
+
+- [Code, data pipeline and every test result](https://github.com/parvladdha8/fantasy-projection-engine)

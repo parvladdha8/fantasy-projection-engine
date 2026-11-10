@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { latestProjections, playerHistory } from "@/lib/data";
@@ -12,6 +13,18 @@ const PLAIN: Record<string, string> = {
   "betting lines: scoring environment": "In games the market expects to be high-scoring, each target and carry is worth more.",
   "median adjustment": "Converts the average outcome into the median. Fantasy scores are skewed (a few huge weeks), so the typical week sits below the average.",
 };
+
+export async function generateMetadata({ params }: PageProps<"/player/[id]">): Promise<Metadata> {
+  const id = decodeURIComponent((await params).id);
+  const { rows } = await latestProjections();
+  const p = rows.find((r) => r.player_id === id);
+  const canonical = { canonical: `/player/${encodeURIComponent(id)}` };
+  if (!p) return { title: "Player projection", alternates: canonical, robots: { index: false } };
+  const title = `${p.player_name} Week ${p.week} projection (full PPR)`;
+  const description = `${p.player_name} (${p.position}, ${p.team}) Week ${p.week} full-PPR projection: ${p.median.toFixed(1)} points ` +
+    `(floor ${p.floor.toFixed(1)}, ceiling ${p.ceiling.toFixed(1)}), with every step of how it was calculated.`;
+  return { title, description, alternates: canonical, openGraph: { title, description } };
+}
 
 export default function PlayerPage({ params }: PageProps<"/player/[id]">) {
   return (

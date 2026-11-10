@@ -1,6 +1,17 @@
 import Link from "next/link";
 import { latestProjections, formatPT } from "@/lib/data";
+import type { Metadata } from "next";
 import ProjectionsTable, { type Row } from "./projections-table";
+import { FAQ, SITE_URL, jsonLd } from "@/lib/site";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
+
+const FAQ_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  url: SITE_URL,
+  mainEntity: FAQ.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
 
 const r1 = (x: number) => Math.round(x * 10) / 10;
 
@@ -18,9 +29,12 @@ export default async function Home() {
     <div className="space-y-16">
       <section className="space-y-6 pt-2 sm:pt-6">
         <p className="fade-up text-sm font-medium text-accent">Full-PPR fantasy football projections</p>
-        <h1 className="fade-up delay-1 text-4xl sm:text-6xl font-semibold leading-[1.05] tracking-tight max-w-3xl">
-          <span className="gradient-text">Projections that grade themselves</span> in public.
+        <h1 className="fade-up delay-1 text-5xl sm:text-7xl font-semibold leading-[1.02] tracking-tight">
+          <span className="gradient-text">FantasyQuant</span>
         </h1>
+        <p className="fade-up delay-1 text-2xl sm:text-4xl font-semibold leading-tight tracking-tight max-w-3xl">
+          Projections that grade themselves in public.
+        </p>
         <p className="fade-up delay-2 text-lg sm:text-xl text-subtle max-w-2xl leading-relaxed">
           Every player gets a floor, median and ceiling. Every number shows how it was calculated. Every week, our projections
           are locked at kickoff and scored against Sleeper&apos;s, including the weeks we lose.
@@ -66,6 +80,22 @@ export default async function Home() {
         ) : (
           <p className="text-subtle">No projections published yet.</p>
         )}
+      </section>
+
+      <section id="faq" className="scroll-mt-20 space-y-5 max-w-3xl">
+        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">Frequently asked questions</h2>
+        <div className="card divide-y divide-line">
+          {FAQ.map(([q, a]) => (
+            <details key={q} className="group px-5 py-4">
+              <summary className="cursor-pointer list-none font-medium flex items-center justify-between gap-4">
+                <h3 className="text-[15px]">{q}</h3>
+                <span aria-hidden className="text-subtle transition-transform group-open:rotate-45">+</span>
+              </summary>
+              <p className="mt-2 text-sm text-subtle leading-relaxed">{a}</p>
+            </details>
+          ))}
+        </div>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(FAQ_LD) }} />
       </section>
     </div>
   );

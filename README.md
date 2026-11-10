@@ -2,7 +2,7 @@
 
 Weekly full-PPR fantasy football projections that try to beat a simple average by modeling situational effects, and that publicly grade themselves every week.
 
-**Live site: [fantasyquant.vercel.app](https://fantasyquant.vercel.app)** (FantasyQuant). Projections refresh automatically; the Big 60 scoreboard grades us every week against Sleeper (projections by RotoWire) and our own baseline.
+**Live site: [fantasyquant.app](https://www.fantasyquant.app)** (FantasyQuant). Projections refresh automatically; the Big 60 scoreboard grades us every week against Sleeper (projections by RotoWire) and our own baseline.
 
 ## Plain-English map of the project
 

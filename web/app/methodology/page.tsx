@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Methodology" };
+export const metadata: Metadata = {
+  title: "Methodology and test results",
+  description: "FantasyQuant's model, testing rules and held-out results: 4.5% lower error than a weighted average on the untouched 2025 season (p < 0.001), plus every idea that failed and why.",
+  alternates: { canonical: "/methodology" },
+};
 
 const REJECTED = [
   ["Week-of-season ramp (early / mid / late season)", "Slightly worse out of sample"],

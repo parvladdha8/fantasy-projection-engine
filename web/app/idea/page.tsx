@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "The idea" };
+export const metadata: Metadata = {
+  title: "How FantasyQuant works",
+  description: "How FantasyQuant builds fantasy football projections with economics and statistics: opportunity × efficiency, empirical-Bayes shrinkage, betting lines, medians and quantile regression, explained in plain English.",
+  alternates: { canonical: "/idea" },
+};
 
 const DIFFERENT = [
   ["A range, not just a number", "Every player gets a floor, median and ceiling. We check that the range is honest: in our 2025 test, 82.7% of outcomes landed inside the 10th–90th percentile band (target ≈ 80%)."],

@@ -5,6 +5,8 @@ name: Grade the Big 60
 on:
   schedule:
     - cron: "0 15 * * *"          # daily, 7 am PT
+    - cron: "17 12,18,21 * * 2"   # Tuesday 4 am, 10 am, 1 pm PT: post the week as soon as nflverse has Monday night's stats
+    - cron: "17 1 * * 3"          # Tuesday ~5 pm PT, last same-day try
   workflow_dispatch: {}
 permissions:
   contents: read

@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { leaderboard, PLATFORM_LABEL, type WeekResult, type PositionResult } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Big 60 scoreboard" };
+export const metadata: Metadata = {
+  title: "Big 60 scoreboard: FantasyQuant vs Sleeper",
+  description: "Weekly accuracy scoreboard: FantasyQuant's full-PPR projections vs Sleeper's on Sleeper's own top 60 players, locked at kickoff and graded on actual points. Every week is published.",
+  alternates: { canonical: "/big60" },
+};
 
 const ORDER = ["sleeper", "baseline"];
 

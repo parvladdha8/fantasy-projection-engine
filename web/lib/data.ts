@@ -5,7 +5,9 @@ import { cacheLife } from "next/cache";
 export type Projection = {
   player_id: string; game_id: string; season: number; week: number; player_name: string; position: string;
   team: string; median: number; floor: number; ceiling: number; baseline: number | null; explanation: string | null;
+  injury_status?: string | null; p_play?: number | null;
 };
+
 export type Run = { run_id: string; started_at: string; finished_at: string | null; status: string };
 export type WeekResult = {
   platform: string; season: number; week: number; n_pool: number; n_scored: number; n_dropped_no_ours: number;

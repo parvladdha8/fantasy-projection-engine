@@ -1,0 +1,26 @@
+{
+  "seasons": [
+    2018,
+    2023
+  ],
+  "p_play": {
+    "out": 0.0012,
+    "doubtful": 0.017,
+    "prev_out": 0.3118,
+    "prev_doubtful": 0.4629,
+    "questionable": 0.6605,
+    "dnp": 0.9005,
+    "full": 0.9358,
+    "limited": 0.9443
+  },
+  "n": {
+    "out": 1602,
+    "doubtful": 294,
+    "prev_out": 1549,
+    "prev_doubtful": 283,
+    "questionable": 2524,
+    "dnp": 372,
+    "full": 3958,
+    "limited": 682
+  }
+}

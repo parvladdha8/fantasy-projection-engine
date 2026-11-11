@@ -3,14 +3,19 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
-// Compact row sent to the browser: [player_id, name, position, team, floor, median, ceiling] (numbers to 1 decimal).
-export type Row = [string, string, string, string, number, number, number];
+import { injuryBadge } from "@/lib/injury";
+
+// Compact row sent to the browser: [player_id, name, position, team, floor, median, ceiling, injury status, chance of
+// playing] (numbers to 1 decimal; injury fields null for players not on an injury report).
+export type Row = [string, string, string, string, number, number, number, string | null, number | null];
+
+const TONE = { bad: "bg-bad/15 text-bad", warn: "bg-amber-500/15 text-amber-600 dark:text-amber-400", info: "bg-muted text-subtle" };
 
 const POSITIONS = ["All", "QB", "RB", "WR", "TE"] as const;
 
 export default function ProjectionsTable({ data }: { data: Row[] }) {
-  const rows = useMemo(() => data.map(([player_id, player_name, position, team, floor, median, ceiling]) =>
-    ({ player_id, player_name, position, team, floor, median, ceiling })), [data]);
+  const rows = useMemo(() => data.map(([player_id, player_name, position, team, floor, median, ceiling, injury_status, p_play]) =>
+    ({ player_id, player_name, position, team, floor, median, ceiling, injury_status, badge: injuryBadge(injury_status, p_play) })), [data]);
   const [pos, setPos] = useState<(typeof POSITIONS)[number]>("All");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
@@ -77,6 +82,12 @@ export default function ProjectionsTable({ data }: { data: Row[] }) {
                   <td className="px-4 py-2.5">
                     <Link href={`/player/${r.player_id}`} className="font-medium group-hover:text-accent transition-colors">{r.player_name}</Link>
                     <span className="ml-2 text-[12px] text-subtle">{r.position} · {r.team}</span>
+                    {r.badge && (
+                      <span title={`${r.injury_status ?? ""}. Projection assumes he plays.`}
+                        className={`ml-2 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${TONE[r.badge.tone]}`}>
+                        {r.badge.label}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2.5 text-right num text-subtle">{r.floor.toFixed(1)}</td>
                   <td className="px-3 py-2.5 text-right num font-semibold">{r.median.toFixed(1)}</td>

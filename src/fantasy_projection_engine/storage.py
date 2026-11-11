@@ -14,7 +14,7 @@ from .data import PROJECT_ROOT
 
 DB_DIR = PROJECT_ROOT / "db"
 PROJ_COLS = ["player_id", "game_id", "season", "week", "player_name", "position", "team", "median", "floor", "ceiling",
-             "baseline", "explanation"]
+             "baseline", "explanation", "injury_status", "p_play"]
 
 
 def utc_now() -> str:
@@ -87,6 +87,9 @@ def save_projections(conn, run_id: str, proj: pd.DataFrame):
     p = proj.rename(columns={"player_display_name": "player_name", "step_baseline": "baseline"})
     if "baseline" not in p:
         p = p.assign(baseline=float("nan"))
+    for c in ("injury_status", "p_play"):      # optional: healthy players / callers without injury data
+        if c not in p:
+            p = p.assign(**{c: None})
     rows = [tuple(None if pd.isna(v) else (v.item() if hasattr(v, "item") else v) for v in r)
             for r in p[PROJ_COLS].itertuples(index=False)]
     conn.cursor().executemany(_sql(conn, f"INSERT INTO projections (run_id, {', '.join(PROJ_COLS)}) VALUES ({', '.join('?' * (len(PROJ_COLS) + 1))})"),

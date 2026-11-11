@@ -70,12 +70,15 @@ export default async function Home() {
           </div>
           <p className="text-[13px] text-subtle max-w-sm">
             <strong className="text-foreground font-medium">Median</strong>: half the time he scores more, half less.{" "}
-            <strong className="text-foreground font-medium">Floor / ceiling</strong>: a bad week and a great week (10th / 90th percentile).
+            <strong className="text-foreground font-medium">Floor / ceiling</strong>: a bad week and a great week (10th / 90th percentile).{" "}
+            <strong className="text-foreground font-medium">Injury tags</strong>: the latest official report. Projections assume the
+            player plays; the % is how often players with that status have played (2018–2023). Players ruled Out are removed.
           </p>
         </div>
         {rows.length ? (
           <ProjectionsTable
-            data={rows.map((r): Row => [r.player_id, r.player_name, r.position, r.team, r1(r.floor), r1(r.median), r1(r.ceiling)])}
+            data={rows.map((r): Row => [r.player_id, r.player_name, r.position, r.team, r1(r.floor), r1(r.median), r1(r.ceiling),
+              r.injury_status ?? null, r.p_play ?? null])}
           />
         ) : (
           <p className="text-subtle">No projections published yet.</p>

@@ -5,6 +5,8 @@ on:
   schedule:
     - cron: "0 13 * * *"          # daily, 5 am PT
     - cron: "20 */3 * * 4,5,6,0"  # Thu–Sun every 3 hours (injury news moves fastest)
+    - cron: "20 */3 * * 3"        # Wednesday every 3 hours: first practice/injury reports of the week (2026-11-11)
+    - cron: "20 1,7,19 * * 2,3"   # Mon/Tue evening and Tue/Wed morning+midday PT: IR moves and roster transactions
     # Extra pre-kickoff runs (2026-11-07). GitHub skips scheduled runs when busy, so several chances per window,
     # at off-peak minutes. Times UTC (ET = UTC − 5 in winter):
     - cron: "13,43 15-17 * * 0"     # Sunday 10:13 am–12:43 pm ET, before the 1 pm games (and 9:30 am international games: 13:13 below)

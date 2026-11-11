@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS projections (
     ceiling         DOUBLE PRECISION,
     baseline        DOUBLE PRECISION,  -- trailing-average projection (the 'baseline' platform), same run
     explanation     TEXT,
+    injury_status   TEXT,              -- latest injury report text, e.g. "Out last game (week 9); ..." (NULL = not listed)
+    p_play          DOUBLE PRECISION,  -- historical share of players in that report state who played (2018–23)
     PRIMARY KEY (run_id, player_id, game_id)
 );
 

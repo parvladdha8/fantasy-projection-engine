@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { latestProjections, playerHistory } from "@/lib/data";
+import { injuryBadge } from "@/lib/injury";
 import { parseExplanation } from "@/lib/explain";
 
 const PLAIN: Record<string, string> = {
@@ -54,6 +55,15 @@ async function Player({ id }: { id: string }) {
             <p className="text-sm font-medium text-accent">{p.position} · {p.team} · Week {p.week}</p>
             <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mt-1">{p.player_name}</h1>
           </div>
+          {p.injury_status && (
+            <div className={`fade-up delay-1 max-w-lg rounded-2xl px-4 py-3 text-sm ${injuryBadge(p.injury_status, p.p_play)?.tone === "bad" ? "bg-bad/10" : "bg-muted"}`}>
+              <div className="font-semibold">Injury report: {p.injury_status}</div>
+              <p className="text-subtle mt-1">
+                {p.p_play != null && <>Historically, {Math.round(p.p_play * 100)}% of players with this status played that week (2018–2023). </>}
+                The projection below assumes he plays.
+              </p>
+            </div>
+          )}
           <div className="fade-up delay-1 grid grid-cols-3 gap-3 max-w-lg">
             {[["Floor", p.floor, "a bad week"], ["Median", p.median, "our projection"], ["Ceiling", p.ceiling, "a great week"]].map(([k, v, note]) => (
               <div key={k as string} className={`card p-4 text-center ${k === "Median" ? "ring-2 ring-accent/40" : ""}`}>

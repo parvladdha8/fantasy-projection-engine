@@ -7,6 +7,7 @@ export function injuryBadge(status: string | null | undefined, pPlay: number | n
   const wk = status.match(/\(week (\d+)\)/)?.[1];
   if (status.startsWith("Out last game")) return { label: `Out wk ${wk}${pct}`, tone: "bad" };
   if (status.startsWith("Doubtful last game")) return { label: `Doubtful wk ${wk}${pct}`, tone: "bad" };
+  if (/^(Injured reserve|PUP list|Suspended|Not active)/.test(status)) return { label: status.split(/[,·]/)[0].trim(), tone: "bad" };
   if (status.startsWith("Out")) return { label: `Out${pct}`, tone: "bad" };
   if (status.startsWith("Doubtful")) return { label: `Doubtful${pct}`, tone: "bad" };
   if (status.startsWith("Questionable")) return { label: `Questionable${pct}`, tone: "warn" };

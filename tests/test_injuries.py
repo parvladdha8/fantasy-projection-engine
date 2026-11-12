@@ -125,3 +125,47 @@ def test_play_rates_count_only_listed_players():
     assert r.loc["out", "p_play"] == 0.0                     # a: Out week 1, didn't play
     assert r.loc["prev_out", "p_play"] == 1.0                # a: Out week 1 → played week 2 (seen Monday, before week-2 report)
     assert r.loc["questionable", "p_play"] == 0.5            # b played, c didn't
+
+
+def _sleeper(pid, status, part=None, notes=None, team="LAR"):
+    return {"player_id": pid, "team": team, "player": {"injury_status": status, "injury_body_part": part, "injury_notes": notes}}
+
+
+def test_sleeper_news_flags_player_before_official_report():
+    """Puka Nacua, Nov 11 2026: Sleeper had him Out (MCL) while the Rams' week-10 report wasn't on nflverse yet."""
+    from fantasy_projection_engine.availability import attach_status, combine_states, injury_states, sleeper_states
+    xw = pd.DataFrame({"sleeper_id": ["s1", "s2", "s3", "s4"], "gsis_id": ["puka", "ir_guy", "q_off", "healthy"]})
+    raw = [_sleeper("s1", "Out", "Knee - MCL", "Sprain"), _sleeper("s2", "IR", "Ankle"),
+           _sleeper("s3", "Out"), _sleeper("s4", None)]
+    official = injury_states(_report([{"team": "LA", "week": 10, "gsis_id": "q_off", "report_status": "Questionable"}]), 2026, 10)
+    out = attach_status(pd.DataFrame({"player_id": ["puka", "ir_guy", "q_off", "healthy"]}),
+                        combine_states(official, sleeper_states(raw, xw)), {"questionable": 0.66}).set_index("player_id")
+    assert out.loc["puka", "injury_status"] == "Out, per latest news (Sleeper); official report not out yet · Knee - MCL sprain"
+    assert out.loc["puka", "injury_state"] == "news_out" and pd.isna(out.loc["puka", "p_play"])   # no history → no %
+    assert out.loc["ir_guy", "injury_status"].startswith("Injured reserve")
+    assert out.loc["q_off", "injury_state"] == "questionable" and out.loc["q_off", "p_play"] == 0.66  # official designation wins
+    assert pd.isna(out.loc["healthy", "injury_status"])
+
+
+def test_news_beats_carried_and_practice_but_silence_never_clears():
+    from fantasy_projection_engine.availability import combine_states, injury_states, sleeper_states
+    official = injury_states(_report([
+        {"team": "NE", "week": 9, "gsis_id": "carried", "report_status": "Out"},
+        {"team": "NE", "week": 9, "gsis_id": "still_carried", "report_status": "Out"},
+        {"team": "NYG", "week": 10, "gsis_id": "dnp", "practice_status": "Did Not Participate In Practice"}]), 2026, 10)
+    xw = pd.DataFrame({"sleeper_id": ["a", "b"], "gsis_id": ["carried", "dnp"]})
+    s = combine_states(official, sleeper_states([_sleeper("a", "Questionable"), _sleeper("b", "Doubtful")], xw)).set_index("player_id")
+    assert s.loc["carried", "state"] == "news_questionable"   # newer news replaces last week's Out
+    assert s.loc["dnp", "state"] == "news_doubtful"           # and a practice-only line
+    assert s.loc["still_carried", "state"] == "prev_out"      # no news → last week's Out stays
+    assert len(s) == 3
+
+
+def test_sleeper_cache_reused_within_window(tmp_path, monkeypatch):
+    from fantasy_projection_engine import consensus
+    calls = []
+    monkeypatch.setattr(consensus, "fetch_sleeper", lambda season, week: calls.append(1) or [{"x": 1}])
+    a = consensus.fetch_sleeper_cached(tmp_path, 2026, 10, "2026-11-11T21:00:00Z")
+    b = consensus.fetch_sleeper_cached(tmp_path, 2026, 10, "2026-11-11T21:10:00Z")   # snapshot step: reuse
+    c = consensus.fetch_sleeper_cached(tmp_path, 2026, 10, "2026-11-11T23:00:00Z")   # stale: fetch again
+    assert len(calls) == 2 and a == b == ([{"x": 1}], "2026-11-11T21:00:00Z") and c[1] == "2026-11-11T23:00:00Z"

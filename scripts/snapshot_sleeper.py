@@ -1,6 +1,6 @@
 """Snapshot Sleeper's projections (by RotoWire) for the next week into consensus_snapshots (private; never published).
 
-One API call per run. Uses the schedule and rosters from the refresh's download (same run on GitHub).
+One API call per run (shared with the refresh step's injury check). Uses the schedule and rosters from the refresh's download (same run on GitHub).
 Usage: uv run python scripts/snapshot_sleeper.py [--sqlite PATH]
 """
 
@@ -8,7 +8,7 @@ import sys
 
 from fantasy_projection_engine import LIVE_SEASON
 from fantasy_projection_engine.alerts import write_failure
-from fantasy_projection_engine.consensus import LABEL, fetch_sleeper, parse_sleeper
+from fantasy_projection_engine.consensus import LABEL, fetch_sleeper_cached, parse_sleeper
 from fantasy_projection_engine.data import latest_live, load_live
 from fantasy_projection_engine.live import next_week
 from fantasy_projection_engine.storage import connect_postgres, connect_sqlite, save_snapshots, utc_now
@@ -20,7 +20,8 @@ def main(argv):
     week = next_week(sched, season)
     xw = load_live(season, "rosters", pull)[["sleeper_id", "gsis_id"]]
     now = utc_now()
-    rows, counts = parse_sleeper(fetch_sleeper(season, week), xw, sched, season, week, captured_at=now)
+    raw, fetched_at = fetch_sleeper_cached(pull, season, week, now)   # reuses the refresh step's call when fresh
+    rows, counts = parse_sleeper(raw, xw, sched, season, week, captured_at=fetched_at)
     conn = connect_sqlite(argv[argv.index("--sqlite") + 1]) if "--sqlite" in argv else connect_postgres()
     n = save_snapshots(conn, rows)
     conn.close()

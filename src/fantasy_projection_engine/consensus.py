@@ -8,6 +8,7 @@ Rules pre-registered in DECISIONS.md (2026-11-05, "Sleeper joins the Big 60"):
 
 import json
 import urllib.request
+from pathlib import Path
 
 import pandas as pd
 
@@ -28,6 +29,25 @@ def fetch_sleeper(season: int, week: int, timeout: int = 30) -> list[dict]:
                                  headers={"User-Agent": "fantasy-projection-engine (non-commercial research)"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.load(r)
+
+
+CACHE = "sleeper_projections.json"   # saved in the refresh's download folder so the snapshot step reuses the same call
+
+
+def fetch_sleeper_cached(folder, season: int, week: int, now: str, max_age_min: int = 45) -> tuple[list[dict], str]:
+    """(raw, fetched_at). Reuses folder/CACHE if it is for this season/week and under max_age_min old; else fetches and
+    saves it. Keeps the pre-registered "one API call per refresh" even though two steps read Sleeper."""
+    from datetime import datetime
+    f = Path(folder) / CACHE
+    if f.exists():
+        c = json.loads(f.read_text())
+        age = (datetime.fromisoformat(now.replace("Z", "+00:00")) -
+               datetime.fromisoformat(c["fetched_at"].replace("Z", "+00:00"))).total_seconds() / 60
+        if c["season"] == season and c["week"] == week and 0 <= age <= max_age_min:
+            return c["data"], c["fetched_at"]
+    raw = fetch_sleeper(season, week)
+    f.write_text(json.dumps({"season": season, "week": week, "fetched_at": now, "data": raw}))
+    return raw, now
 
 
 def rescore(stats: dict, rule: dict = NFLVERSE_PPR) -> float:

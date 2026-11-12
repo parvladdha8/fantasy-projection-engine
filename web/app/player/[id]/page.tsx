@@ -57,7 +57,9 @@ async function Player({ id }: { id: string }) {
           </div>
           {p.injury_status && (
             <div className={`fade-up delay-1 max-w-lg rounded-2xl px-4 py-3 text-sm ${injuryBadge(p.injury_status, p.p_play)?.tone === "bad" ? "bg-bad/10" : "bg-muted"}`}>
-              <div className="font-semibold">Injury report: {p.injury_status}</div>
+              <div className="font-semibold">
+                {injuryBadge(p.injury_status, p.p_play)?.label === "Trending out" ? "Trending out: " : "Injury report: "}{p.injury_status}
+              </div>
               <p className="text-subtle mt-1">
                 {p.p_play != null && <>Historically, {Math.round(p.p_play * 100)}% of players with this status played that week (2018–2023). </>}
                 The projection below assumes he plays.

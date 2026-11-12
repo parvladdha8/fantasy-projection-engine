@@ -71,7 +71,8 @@ export default async function Home() {
           <p className="text-[13px] text-subtle max-w-sm">
             <strong className="text-foreground font-medium">Median</strong>: half the time he scores more, half less.{" "}
             <strong className="text-foreground font-medium">Floor / ceiling</strong>: a bad week and a great week (10th / 90th percentile).{" "}
-            <strong className="text-foreground font-medium">Injury tags</strong>: the latest official report. Projections assume the
+            <strong className="text-foreground font-medium">Injury tags</strong>: the latest official report, or the latest news before the
+            report is out (&ldquo;Trending out&rdquo; means news lists him Out or Doubtful). Projections assume the
             player plays; the % is how often players with that status have played (2018–2023). Players ruled Out are removed.
           </p>
         </div>

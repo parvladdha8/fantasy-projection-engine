@@ -4,6 +4,8 @@
 export function injuryBadge(status: string | null | undefined, pPlay: number | null | undefined): { label: string; tone: "bad" | "warn" | "info" } | null {
   if (!status) return null;
   const pct = pPlay == null ? "" : ` · ${Math.round(pPlay * 100)}% play`;
+  // Latest news, official report not out yet (Sleeper; DECISIONS.md 2026-11-11): Out or Doubtful → "Trending out".
+  if (status.includes("per latest news") && /^(Out|Doubtful)/.test(status)) return { label: "Trending out", tone: "bad" };
   const wk = status.match(/\(week (\d+)\)/)?.[1];
   if (status.startsWith("Out last game")) return { label: `Out wk ${wk}${pct}`, tone: "bad" };
   if (status.startsWith("Doubtful last game")) return { label: `Doubtful wk ${wk}${pct}`, tone: "bad" };

@@ -66,6 +66,17 @@ async function Player({ id }: { id: string }) {
               </p>
             </div>
           )}
+          {(p.explanation ?? "").startsWith("first career start") && (
+            <div className="fade-up delay-1 max-w-lg rounded-2xl bg-muted px-4 py-3 text-sm">
+              <div className="font-semibold">First career start</div>
+              <p className="text-subtle mt-1">
+                He has no NFL games yet, so there is no history of his own to project from. This projection is what QBs
+                making their first career start have scored: the middle result of 63 first starts from 2018–2023, with
+                the 10th and 90th percentiles as floor and ceiling. Tested on the 2024 season, it missed by less on average
+                than using a typical QB start, and 7 of 9 results landed between the floor and ceiling.
+              </p>
+            </div>
+          )}
           <div className="fade-up delay-1 grid grid-cols-3 gap-3 max-w-lg">
             {[["Floor", p.floor, "a bad week"], ["Median", p.median, "our projection"], ["Ceiling", p.ceiling, "a great week"]].map(([k, v, note]) => (
               <div key={k as string} className={`card p-4 text-center ${k === "Median" ? "ring-2 ring-accent/40" : ""}`}>

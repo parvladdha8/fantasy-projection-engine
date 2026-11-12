@@ -105,6 +105,11 @@ def pull_live(season: int, stamp: str | None = None) -> Path:
     nfl.load_players().write_parquet(out / "players.parquet")  # refreshed crosswalk (includes rookies)
     nfl.load_rosters_weekly([season]).write_parquet(out / "rosters_weekly.parquet")
     nfl.load_rosters([season]).write_parquet(out / "rosters.parquet")  # current roster AS OF this pull (pre-game)
+    try:  # latest depth-chart snapshot only (first-start QBs, debuts.py); optional, so older pulls stay usable
+        d = nfl.load_depth_charts([season]).to_pandas()
+        d[d["dt"] == d["dt"].max()].to_parquet(out / "depth_charts.parquet")
+    except Exception as e:
+        print(f"WARNING: depth charts unavailable ({type(e).__name__}: {e})")
     return out
 
 

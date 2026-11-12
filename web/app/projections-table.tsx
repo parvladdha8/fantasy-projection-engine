@@ -6,16 +6,16 @@ import { useMemo, useRef, useState } from "react";
 import { injuryBadge } from "@/lib/injury";
 
 // Compact row sent to the browser: [player_id, name, position, team, floor, median, ceiling, injury status, chance of
-// playing] (numbers to 1 decimal; injury fields null for players not on an injury report).
-export type Row = [string, string, string, string, number, number, number, string | null, number | null];
+// playing, first career start] (numbers to 1 decimal; injury fields null for players not on an injury report).
+export type Row = [string, string, string, string, number, number, number, string | null, number | null, boolean];
 
 const TONE = { bad: "bg-bad/15 text-bad", warn: "bg-amber-500/15 text-amber-600 dark:text-amber-400", info: "bg-muted text-subtle" };
 
 const POSITIONS = ["All", "QB", "RB", "WR", "TE"] as const;
 
 export default function ProjectionsTable({ data }: { data: Row[] }) {
-  const rows = useMemo(() => data.map(([player_id, player_name, position, team, floor, median, ceiling, injury_status, p_play]) =>
-    ({ player_id, player_name, position, team, floor, median, ceiling, injury_status, badge: injuryBadge(injury_status, p_play) })), [data]);
+  const rows = useMemo(() => data.map(([player_id, player_name, position, team, floor, median, ceiling, injury_status, p_play, first_start]) =>
+    ({ player_id, player_name, position, team, floor, median, ceiling, injury_status, first_start, badge: injuryBadge(injury_status, p_play) })), [data]);
   const [pos, setPos] = useState<(typeof POSITIONS)[number]>("All");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
@@ -82,6 +82,12 @@ export default function ProjectionsTable({ data }: { data: Row[] }) {
                   <td className="px-4 py-2.5">
                     <Link href={`/player/${r.player_id}`} className="font-medium group-hover:text-accent transition-colors">{r.player_name}</Link>
                     <span className="ml-2 text-[12px] text-subtle">{r.position} · {r.team}</span>
+                    {r.first_start && (
+                      <span title="First career start: projected from the typical first start by a QB (2018–2023), since he has no NFL games of his own yet."
+                        className={`ml-2 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${TONE.info}`}>
+                        1st start
+                      </span>
+                    )}
                     {r.badge && (
                       <span title={`${r.injury_status ?? ""}. Projection assumes he plays.`}
                         className={`ml-2 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${TONE[r.badge.tone]}`}>

@@ -20,6 +20,7 @@ from fantasy_projection_engine.alerts import write_failure
 from fantasy_projection_engine.availability import (CARRIED, NEWS, attach_status, combine_states, injury_states,
                                                      load_rates, sleeper_states)
 from fantasy_projection_engine.consensus import fetch_sleeper_cached
+from fantasy_projection_engine import debuts
 from fantasy_projection_engine.data import PROJECT_ROOT, latest_live, load_live, pull_live, verify_frozen
 from fantasy_projection_engine.live import live_games
 from fantasy_projection_engine.predict import predict
@@ -47,6 +48,18 @@ def main(argv):
         games, week, excluded, src = live_games(season, pull=pull)
         pred = predict(games, allow_test=True)
         pred = pred[(pred.season == season) & (pred.week == week)].copy()
+        # QB1s about to make their first career start have no games for the model to use: project them with the
+        # typical first start (DECISIONS.md 2026-11-12). Skipped (with a warning) if the depth chart is missing.
+        new_qbs = pd.DataFrame()
+        if (pull / "depth_charts.parquet").exists():
+            from fantasy_projection_engine.live import load_live_inputs, out_designations, roster_for
+            inp = load_live_inputs(season, pull)
+            new_qbs = debuts.debut_rows(debuts.qb1_from_depth(load_live(season, "depth_charts", pull)), roster_for(inp, season, week)[0],
+                                        pred["player_id"], inp["schedules"], inp["players"], season, week, debuts.load())
+            new_qbs = new_qbs[~new_qbs["player_id"].isin(out_designations(inp["injuries"], season, week)["player_id"])]    # officially Out: removed like everyone else
+            pred = pd.concat([pred, new_qbs], ignore_index=True)
+        else:
+            print("WARNING: no depth chart in this pull; first-start QBs not projected")
         # Latest injury status for every projected player, carrying last week's Out/Doubtful forward until the
         # team's new report is out (DECISIONS.md 2026-11-11). Projections stay "if he plays"; p_play is shown beside them.
         # Second source: Sleeper's player status (same feed the snapshot uses, one call), because the official report
@@ -88,6 +101,7 @@ def main(argv):
     print(f"week {week}: {len(pred)} players saved; {len(excluded)} left out (designated Out); team from: {src}")
     print(f"injury status: {n_inj} projected players listed on a report; {n_carried} carried forward from their team's last report; "
           f"{n_news} from the latest news (Sleeper)")
+    print(f"first-start QBs projected: {', '.join(new_qbs['player_display_name']) if len(new_qbs) else 'none'}")
     print(f"served run = this run: {served['run_id'].iloc[0] == run_id};  rows served: {len(served)}")
     print(f"read-back check: largest numeric difference {max_diff:.2e}; names/teams/explanations identical: {same_text}")
     conn.close()

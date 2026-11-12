@@ -169,3 +169,38 @@ def test_sleeper_cache_reused_within_window(tmp_path, monkeypatch):
     b = consensus.fetch_sleeper_cached(tmp_path, 2026, 10, "2026-11-11T21:10:00Z")   # snapshot step: reuse
     c = consensus.fetch_sleeper_cached(tmp_path, 2026, 10, "2026-11-11T23:00:00Z")   # stale: fetch again
     assert len(calls) == 2 and a == b == ([{"x": 1}], "2026-11-11T21:00:00Z") and c[1] == "2026-11-11T23:00:00Z"
+
+
+# --- First-start QBs (debuts.py; DECISIONS.md 2026-11-12) ----------------------------------------------------------
+def _qb_sched():
+    return pd.DataFrame([
+        {"game_id": "g1", "season": 2026, "week": 9, "game_type": "REG", "home_team": "MIA", "away_team": "BUF", "home_qb_id": "willis", "away_qb_id": "allen", "home_score": 20},
+        {"game_id": "g2", "season": 2026, "week": 10, "game_type": "REG", "home_team": "MIA", "away_team": "NYJ", "home_qb_id": "mccord", "away_qb_id": "vet", "home_score": None},
+        {"game_id": "g3", "season": 2026, "week": 10, "game_type": "REG", "home_team": "ARI", "away_team": "SF", "home_qb_id": None, "away_qb_id": None, "home_score": None}])
+
+
+def test_debut_rows_only_unprojected_never_started_active_qb1s():
+    from fantasy_projection_engine.debuts import debut_rows
+    qb1 = pd.DataFrame({"team": ["MIA", "ARI", "SF", "BUF", "NYJ"], "player_id": ["mccord", "beck", "projected", "allen", "old"]})
+    roster = pd.DataFrame({"player_id": ["mccord", "beck", "projected", "allen", "old"], "team": ["MIA", "ARI", "SF", "BUF", "NYJ"],
+                           "status": ["ACT", "ACT", "ACT", "ACT", "ACT"]})
+    players = pd.DataFrame({"gsis_id": ["mccord", "beck", "projected", "allen", "old"], "display_name": ["Kyle McCord", "Carson Beck", "P", "Josh Allen", "Old Vet"],
+                            "rookie_season": [2026, 2026, 2020, 2018, 2010]})
+    est = {"floor": 2.0, "median": 11.9, "ceiling": 21.7}
+    r = debut_rows(qb1, roster, ["projected"], _qb_sched(), players, 2026, 10, est).set_index("player_id")
+    # mccord: listed starter in an UNPLAYED game, which must not count as a past start (no look-ahead)
+    assert set(r.index) == {"mccord", "beck"}     # allen: BUF is on bye and has started; old: pre-2018 career; projected: model has him
+    assert r.loc["mccord", "game_id"] == "g2" and r.loc["beck", "median"] == 11.9 and pd.isna(r.loc["beck", "step_baseline"])
+
+
+def test_first_starts_and_validation():
+    from fantasy_projection_engine.debuts import estimate, first_starts, validate
+    s = _qb_sched().assign(home_score=1)
+    pg = pd.DataFrame({"game_id": ["g1", "g2"], "player_id": ["willis", "mccord"], "fantasy_points_ppr": [10.0, 20.0]})
+    players = pd.DataFrame({"gsis_id": ["willis", "mccord", "allen", "vet"], "rookie_season": [2022, 2026, 2018, 2015]})
+    f = first_starts(s, pg, players).set_index("player_id")
+    assert set(f.index) == {"willis", "mccord", "allen"} and f.loc["allen", "fantasy_points_ppr"] == 0.0   # no stat line → 0
+    est = estimate(f.reset_index(), [2026])
+    assert est["n"] == 3 and est["median"] == 10.0
+    v = validate(f.reset_index(), {"median": 10.0, "floor": 5.0, "ceiling": 15.0}, 2026)
+    assert v["mae"] == (0 + 10 + 10) / 3 and v["coverage"] == 1 / 3

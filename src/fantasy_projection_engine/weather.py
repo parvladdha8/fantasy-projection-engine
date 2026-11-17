@@ -6,6 +6,7 @@ no key, data CC BY 4.0 (credit Open-Meteo on the site). One request covers every
 
 import json
 import urllib.parse
+import urllib.error
 import urllib.request
 
 import pandas as pd
@@ -70,12 +71,20 @@ def request_url(stadium_ids) -> str:
     return API + "?" + urllib.parse.urlencode(q, safe=",")
 
 
-def fetch(stadium_ids, timeout: int = 30) -> list[dict]:
-    """One Open-Meteo request for all stadiums; returns one response object per stadium, in order."""
-    with urllib.request.urlopen(urllib.request.Request(request_url(stadium_ids), headers={"User-Agent": "fantasy-projection-engine (non-commercial research)"}),
-                                timeout=timeout) as r:
-        data = json.load(r)
-    return data if isinstance(data, list) else [data]
+def fetch(stadium_ids, timeout: int = 30, tries: int = 3, wait: float = 20.0) -> list[dict]:
+    """One Open-Meteo request for all stadiums; returns one response object per stadium, in order.
+    Retries network errors (Nov 14–17: occasional TLS handshake timeouts) before giving up."""
+    import time
+    req = urllib.request.Request(request_url(stadium_ids), headers={"User-Agent": "fantasy-projection-engine (non-commercial research)"})
+    for attempt in range(tries):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                data = json.load(r)
+            return data if isinstance(data, list) else [data]
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt == tries - 1:
+                raise
+            time.sleep(wait * (attempt + 1))
 
 
 def game_window(resp: dict, kickoff: str) -> dict | None:

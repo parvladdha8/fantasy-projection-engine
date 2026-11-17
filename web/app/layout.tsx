@@ -28,7 +28,7 @@ const SITE_LD = {
     { "@type": "WebSite", "@id": `${SITE_URL}/#website`, url: SITE_URL, name: SITE_NAME, description: SITE_DESCRIPTION,
       publisher: { "@id": `${SITE_URL}/#org` }, inLanguage: "en-US" },
     { "@type": "Organization", "@id": `${SITE_URL}/#org`, name: SITE_NAME, url: SITE_URL, slogan: TAGLINE,
-      logo: { "@type": "ImageObject", url: `${SITE_URL}/icon.png`, width: 192, height: 192 },
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png`, width: 512, height: 512 },
       founder: { "@type": "Person", name: "Parv Laddha" },
       sameAs: ["https://github.com/parvladdha8/fantasy-projection-engine", "https://www.instagram.com/parv_laddha/"] },
   ],
